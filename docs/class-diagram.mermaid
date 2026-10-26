@@ -1,0 +1,168 @@
+classDiagram
+    direction TB
+
+    class IModule {
+        <<interface>>
+        +Id() const wchar_t*
+        +Group() const wchar_t*
+        +Title() const wchar_t*
+        +Description() const wchar_t*
+        +Kind() ModuleKind
+        +NeedsPath() bool
+        +NeedsTarget() bool
+        +NeedsElevation() bool
+        +ApplyLabel() const wchar_t*
+        +UndoLabel() const wchar_t*
+        +ApplyWarning() const wchar_t*
+        +ApplyIsDanger() bool
+        +SetInput(path, target) void
+        +SetSelection(rows) void
+        +Run(ctx, out) void
+        +Apply(ctx, out) void
+        +SupportsUndo() bool
+        +Undo(ctx, out) void
+        --v2.8 新增--
+        +Actions() vector~ModuleAction~
+        +RunAction(ctx, actionIndex, out) void
+        +RefreshAfterAction() bool
+    }
+
+    class ModuleAction {
+        +label const wchar_t*
+        +warning const wchar_t*
+        +danger bool
+        +glyph wchar_t
+    }
+
+    class ModuleRegistry {
+        +Instance()$ ModuleRegistry&
+        +Register(m) void
+        +All() vector~IModule*~
+        +Find(id) IModule*
+        +Grouped() vector~GroupEntry~
+    }
+
+    class ModuleContext {
+        +hwnd HWND
+        +log LogSink
+        +progress ProgressFn
+        +cancel CancelFn
+        +Log(s) void
+        +Report(pct, s) void
+        +Cancelled() bool
+    }
+
+    class ModuleRow {
+        +c1 : wstring
+        +c2 : wstring
+        +c3 : wstring
+        +c4 : wstring
+        +sortKey : u64
+        +danger : bool
+        +tag : int
+    }
+
+    class ScanItem {
+        +name : wstring
+        +path : wstring
+        +size : u64
+        +category : wstring
+        +risk : wstring
+        +reportOnly : bool
+        +hint : wstring
+        +partial : bool
+        --v2.8 新增--
+        +emptyRecycleBin : bool
+        +stopServiceFirst : bool
+    }
+
+    class CleanReport {
+        <<v2.8 新增 cleanresult.h>>
+        +freedBytes : u64
+        +fileOk : int
+        +fileFail : int
+        +rebootPending : int
+        +fails vector~CleanFileResult~
+        +ErrorTextZh(code)$ wstring
+    }
+
+    class CleanerEngine {
+        <<v2.8 重构 cleaner.cpp>>
+        +RunScan(kind, opt, progress, cancel) ScanOutcome
+        +DeleteFileSmart(path, cancel, report) DeleteStatus
+        +CleanDirectoryContentsEx(dir, cancel, report) u64
+        +EmptyRecycleBinSafe(root, report) bool
+        -tryDeleteWithAttr() bool
+        -retryWithBackoff() bool
+        -scheduleRebootDelete() bool
+    }
+
+    class ProcessRunner {
+        <<v2.8 新增 procrun.h>>
+        +RunProcess(cmdline, opt, fullOut)$ int
+        -readThread : thread
+        -waitThread : thread
+    }
+
+    class ProcRunOptions {
+        +timeoutMs : int
+        +cancel : CancelFn
+        +onLine : function
+    }
+
+    class SysProcessMgrMod {
+        <<sys.process 改造>>
+        -pids_ vector~DWORD~
+        +RunAction(ctx, 0, out) void
+        -TerminateSelected(ctx, out) void
+        -IsProtected(name)$ bool
+    }
+
+    class SysSvcMgrMod {
+        <<sys.services 改造>>
+        -names_ vector~wstring~
+        +Actions() vector~ModuleAction~
+        +RunAction(ctx, idx, out) void
+        -StartOrStop(op) void
+        -SetStartType(type) void
+    }
+
+    class SysTaskMgrMod {
+        <<sys.tasks 新增>>
+        -taskPaths_ vector~wstring~
+        +Run(ctx, out) void
+        +RunAction(ctx, idx, out) void
+        -RunTask() void
+        -StopTask() void
+        -SetEnabled(on) void
+        -DeleteTask() void
+    }
+
+    class SecRepairMod {
+        <<sec.repair 新增>>
+        +Actions() vector~ModuleAction~
+        +RunAction(ctx, idx, out) void
+        -RunRepair(cmdline) void
+    }
+
+    class AppWindow {
+        -StartWork(apply, undo, actionIndex) void
+        -ApplyModuleToUi() void
+        -OnWorkDone() void
+        -ShowMoreActionsMenu() void
+    }
+
+    IModule <|.. ModuleRegistry : 注册
+    IModule ..> ModuleContext : 运行时注入
+    IModule ..> ModuleRow : 结果行
+    IModule ..> ModuleAction : v2.8 扩展动作
+    SysProcessMgrMod ..|> IModule
+    SysSvcMgrMod ..|> IModule
+    SysTaskMgrMod ..|> IModule
+    SecRepairMod ..|> IModule
+    CleanerEngine ..> ScanItem : 产出
+    CleanerEngine ..> CleanReport : 逐文件回报
+    ProcessRunner ..> ProcRunOptions : 配置
+    SecRepairMod ..> ProcessRunner : 长任务
+    AppWindow ..> IModule : 路由 Run/Apply/Undo/RunAction
+    AppWindow ..> ModuleAction : 更多动作菜单

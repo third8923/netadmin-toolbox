@@ -1,0 +1,80 @@
+﻿共 55 个功能模块
+
+【系统管理】
+  sys.tasks                     [优化]  计划任务
+  sys.process                   [优化]  进程管理
+  sys.services                  [优化]  服务管理
+  sys.acct                      [动作]  账户部署
+  sys.domain                    [动作]  计算机名与域
+
+【系统信息】
+  sys.info                      [盘点]  系统概览
+  sys.disk                      [盘点]  磁盘信息
+  sys.startup                   [盘点]  启动项
+  sys.hotfix                    [盘点]  已安装补丁
+  sys.env                       [盘点]  环境变量
+
+【系统维护】
+  sys.hosts                     [输出]  hosts 文件
+
+【软件管家】
+  soft.rec                      [优化]  装机必备 · 推荐总榜
+  soft.rec.browser              [优化]  浏览器上网
+  soft.rec.file                 [优化]  压缩与文件管理
+  soft.rec.office               [优化]  办公与效率
+  soft.rec.dev                  [优化]  开发与运维
+  soft.rec.media                [优化]  影音与图像
+  soft.rec.chat                 [优化]  通讯与社交
+  soft.rec.sys                  [优化]  系统与安全
+  soft.search                   [优化]  软件搜索
+  soft.installed                [优化]  已安装软件
+  soft.upgrade                  [优化]  软件升级
+
+【网络管理】
+  net.sharemap                  [优化]  共享扫描与网盘映射
+  net.sharehost                 [动作]  共享部署
+  net.adapters                  [盘点]  网络适配器
+  net.conn                      [盘点]  网络连接
+  net.route                     [盘点]  路由表
+  net.arp                       [盘点]  ARP 表
+  net.flushdns                  [动作]  刷新 DNS 缓存
+  net.wifi                      [盘点]  无线网络
+
+【安全体检】
+  sec.scan                      [动作]  一键体检
+  sec.repair                    [动作]  系统修复
+
+【网络诊断】
+  net.portscan                  [盘点]  端口扫描
+  net.lanscan                   [盘点]  局域网扫描
+  net.diag                      [输出]  网络诊断
+
+【常用管理】
+  sys.restore                   [动作]  系统还原点
+  sys.users                     [优化]  本地用户
+  sys.shares                    [优化]  共享目录
+  sys.events                    [盘点]  事件日志分析
+  sys.power                     [优化]  电源计划
+  sys.update                    [盘点]  缺失更新检查
+
+【磁盘清理】
+  clean.basic                   [清理]  基础清理
+  clean.system                  [清理]  系统清理
+  clean.wechat                  [清理]  微信清理
+  clean.qq                      [清理]  QQ 清理
+  clean.appcache                [清理]  应用缓存
+
+【空间分析】
+  scan.large                    [盘点]  大文件查找
+  scan.dup                      [盘点]  重复文件
+  scan.similar                  [盘点]  相似文件
+  scan.similarimg               [盘点]  相似图片
+  scan.dirs                     [盘点]  目录大小
+  scan.apps                     [盘点]  软件占用
+
+【高级工具】
+  tool.move                     [盘点]  软件搬家
+  tool.usermigrate              [盘点]  用户目录迁移
+
+【系统优化】
+  tweak.winopt                  [优化]  Windows 优化

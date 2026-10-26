@@ -1,0 +1,33 @@
+#include <windows.h>
+
+// 应用图标（由 tools/gen_icon.py 生成：DNA 双螺旋 + 终端光标）
+APPICON ICON "app.ico"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION 2,16,0,0
+PRODUCTVERSION 2,16,0,0
+FILEFLAGSMASK 0x3fL
+FILEFLAGS 0x0L
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "080404b0"
+        BEGIN
+            VALUE "CompanyName", "biohacker.fun"
+            VALUE "FileDescription", "NetAdmin Toolbox - extensible network admin toolkit (biohacker.fun flagship product)"
+            VALUE "FileVersion", "2.16.0.0"
+            VALUE "InternalName", "netadmin-toolbox"
+            VALUE "LegalCopyright", "MIT License. (c) biohacker.fun"
+            VALUE "OriginalFilename", "netadmin-toolbox.exe"
+            VALUE "ProductName", "NetAdmin Toolbox"
+            VALUE "ProductVersion", "2.16.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x804, 1200
+    END
+END

@@ -1,0 +1,14 @@
+﻿sys.domain --action 0 --target qa-rename-host
+▶ 动作 0 @ 计算机名与域  选中 3 项
+  拒绝: 当前非管理员，动作「重命名计算机」需要管理员权限
+
+需要管理员权限：「重命名计算机」未执行
+netadmin-toolbox.exe : 
+所在位置 行:508 字符: 513
++ ... sts) { $i++; $out = & $exe run $t[0] $t[1..($t.Count-1)] 2>&1 | Out-S ...
++                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+提示: 请以管理员身份运行本程序（启动时会自动请求提权）。
+(无数据)

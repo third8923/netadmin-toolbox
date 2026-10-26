@@ -1,0 +1,27 @@
+# ---- 构建产物 ----
+build/
+dist/
+*.o
+*.obj
+*.res
+netadmin-toolbox.exe
+
+# ---- 本地运行时生成 ----
+netadmin-toolbox-theme.ini
+*-theme.ini
+rules/
+wulock-backup.tsv
+*.err
+*.log
+
+# ---- 测试临时产物 ----
+tools/*.exe
+tools/*.png
+tools/*.pbm
+t2.err
+
+# ---- 非仓库内容 ----
+.workbuddy/
+8款卸载流氓软件推荐，geek、HiBit、SoftCnkiller、.txt
+Thumbs.db
+Desktop.ini

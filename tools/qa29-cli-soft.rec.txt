@@ -1,0 +1,77 @@
+﻿▶ 装机必备 · 推荐总榜  (soft.rec)
+✓ winget v1.30.140-preview（Windows 包管理器可用）
+✓ 已安装列表读取完成（99 条）
+
+netadmin-toolbox.exe : 
+所在位置 行:508 字符: 320
++ ... .scan","soft.rec")) { $t0=Get-Date; $out = & $exe run $m 2>&1 | Out-S ...
++                                                ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+共 63 款 · 已装 7 · 未装 56
+提示: 勾选后点「安装选中」；不勾选 = 安装本榜全部未安装软件。卸载请勾选后点「卸载选中」
+--------------------------------------------------------------
+  Firefox 浏览器                未安装  浏览器  Mozilla.Firefox  【推荐】注重隐私的独立内核浏览器
+  Vivaldi 浏览器                未安装  浏览器  Vivaldi.Vivaldi  【可选】高度可定制的进阶浏览器
+  Opera 浏览器                  未安装  浏览器  Opera.Opera  【可选】内置免费 VPN 与侧边栏
+  NanaZip                       未安装  压缩文件  M2Team.NanaZip  【可选】7-Zip 的 Win11 现代版
+  Bandizip                      未安装  压缩文件  Bandisoft.Bandizip  【推荐】无广告极速压缩，智能解压
+  Everything                    未安装  压缩文件  voidtools.Everything  【必备】毫秒级全盘文件名搜索
+  WizTree                       未安装  压缩文件  AntibodySoftware.WizTree  【推荐】磁盘空间占用可视化分析
+  WinMerge                      未安装  压缩文件  WinMerge.WinMerge  【推荐】文件与文件夹差异对比合并
+  WinSCP                        未安装  压缩文件  WinSCP.WinSCP  【推荐】SFTP/FTP 文件传输客户端
+  balenaEtcher                  未安装  压缩文件  Balena.Etcher  【可选】系统镜像写入 U 盘
+  Ventoy                        未安装  压缩文件  Ventoy.Ventoy  【可选】多镜像 U 盘启动神器
+  Rufus                         未安装  压缩文件  Rufus.Rufus  【可选】轻量快速制作启动 U 盘
+  WPS Office                    未安装  办公效率  Kingsoft.WPSOffice  【必备】国产办公套件，兼容 Office 格式
+  LibreOffice                   未安装  办公效率  TheDocumentFoundation.LibreOffice  【推荐】开源免费办公套件
+  ONLYOFFICE                    未安装  办公效率  ONLYOFFICE.DesktopEditors  【可选】高度兼容 MS Office 文档
+  SumatraPDF                    未安装  办公效率  SumatraPDF.SumatraPDF  【推荐】极速轻量 PDF/电子书阅读器
+  Notepad++                     未安装  办公效率  Notepad++.Notepad++  【必备】经典代码与文本编辑器
+  Obsidian                      未安装  办公效率  Obsidian.Obsidian  【推荐】本地双链笔记知识库
+  PowerToys                     未安装  办公效率  Microsoft.PowerToys  【推荐】微软官方效率增强工具集
+  Bitwarden                     未安装  办公效率  Bitwarden.Bitwarden  【推荐】开源跨平台密码管理器
+  KeePassXC                     未安装  办公效率  KeePassXCTeam.KeePassXC  【可选】本地离线密码保险箱
+  Neovim                        未安装  开发运维  Neovim.Neovim  【可选】现代 Vim 编辑器
+  Python 3.12                   未安装  开发运维  Python.Python.3.12  【必备】主流编程语言运行时
+  Node.js LTS                   未安装  开发运维  OpenJS.NodeJS.LTS  【推荐】JavaScript 运行时（长期支持）
+  Docker Desktop                未安装  开发运维  Docker.DockerDesktop  【推荐】容器化开发与运行环境
+  PowerShell                    未安装  开发运维  Microsoft.PowerShell  【推荐】跨平台命令行与脚本引擎
+  GitHub Desktop                未安装  开发运维  GitHub.GitHubDesktop  【可选】图形化 Git 客户端
+  Postman                       未安装  开发运维  Postman.Postman  【推荐】API 接口调试工具
+  VLC 播放器                    未安装  影音图像  VideoLAN.VLC  【必备】全格式开源播放器
+  K-Lite 解码包                 未安装  影音图像  CodecGuide.K-LiteCodecPack.Full  【可选】全能影音解码器合集
+  OBS Studio                    未安装  影音图像  OBSProject.OBSStudio  【推荐】直播与录屏神器
+  ShareX                        未安装  影音图像  ShareX.ShareX  【推荐】截图/录屏/GIF 全能工具
+  Flameshot                     未安装  影音图像  Flameshot.Flameshot  【可选】可标注的截图小工具
+  GIMP                          未安装  影音图像  GIMP.GIMP  【推荐】开源图像编辑器（PS 平替）
+  Inkscape                      未安装  影音图像  Inkscape.Inkscape  【可选】开源矢量绘图（AI 平替）
+  Paint.NET                     未安装  影音图像  dotPDN.PaintDotNet  【可选】轻量级图像编辑
+  IrfanView                     未安装  影音图像  IrfanSkiljan.IrfanView  【可选】极速图片查看器
+  PotPlayer                     未安装  影音图像  Daum.PotPlayer  【可选】全能本地影音播放器
+  Spotify                       未安装  影音图像  Spotify.Spotify  【可选】正版流媒体音乐
+  微信                          未安装  通讯社交  Tencent.WeChat  【必备】国民级社交通讯工具
+  QQ                            未安装  通讯社交  Tencent.QQ  【推荐】腾讯 QQ 客户端
+  钉钉                          未安装  通讯社交  Alibaba.DingTalk.Mainland  【可选】企业协同办公平台
+  飞书                          未安装  通讯社交  ByteDance.Feishu  【可选】字节跳动企业协作套件
+  Slack                         未安装  通讯社交  SlackTechnologies.Slack  【可选】海外团队协作工具
+  Discord                       未安装  通讯社交  Discord.Discord  【可选】游戏与社群语音聊天
+  Telegram                      未安装  通讯社交  Telegram.TelegramDesktop  【可选】注重隐私的即时通讯
+  Zoom                          未安装  通讯社交  Zoom.Zoom  【可选】视频会议软件
+  腾讯会议                      未安装  通讯社交  Tencent.TencentMeeting  【可选】云视频会议
+  网易云音乐                    未安装  通讯社交  NetEase.CloudMusic  【可选】流媒体音乐平台
+  CPU-Z                         未安装  系统安全  CPUID.CPU-Z  【推荐】硬件信息检测
+  CrystalDiskInfo               未安装  系统安全  CrystalDewWorld.CrystalDiskInfo  【推荐】硬盘健康状态监控
+  CrystalDiskMark               未安装  系统安全  CrystalDewWorld.CrystalDiskMark  【可选】硬盘性能测试
+  GPU-Z                         未安装  系统安全  TechPowerUp.GPU-Z  【可选】显卡参数检测
+  VeraCrypt                     未安装  系统安全  IDRIX.VeraCrypt  【可选】开源磁盘加密工具
+  Malwarebytes                  未安装  系统安全  Malwarebytes.Malwarebytes  【推荐】恶意软件查杀
+  ToDesk                        未安装  系统安全  Youqu.ToDesk  【可选】远程桌面控制
+  Chrome 浏览器                 156.0.8078.47  浏览器  Google.Chrome  【必备】谷歌官方浏览器，扩展生态最全
+  Edge 浏览器                   157.0.4341.16  浏览器  Microsoft.Edge  【推荐】Windows 原生，兼容与性能兼备
+  7-Zip                         26.05  压缩文件  7zip.7zip  【必备】开源压缩工具，格式支持最全
+  Windows Terminal              1.24.12741.0  办公效率  Microsoft.WindowsTerminal  【推荐】现代化终端模拟器
+  Git                           2.55.0.5  开发运维  Git.Git  【必备】分布式版本控制系统
+  VS Code                       1.141.2  开发运维  Microsoft.VisualStudioCode  【必备】最流行的轻量代码编辑器
+  企业微信                      5.0.12.6018  通讯社交  Tencent.WeCom  【可选】办公版微信

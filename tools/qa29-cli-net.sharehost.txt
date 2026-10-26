@@ -1,0 +1,26 @@
+﻿▶ 共享部署  (net.sharehost)
+
+netadmin-toolbox.exe : 
+所在位置 行:508 字符: 283
++ ... t","sys.domain","net.sharehost")) { $out = & $exe run $m 2>&1 | Out-S ...
++                                                ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+2 就绪 / 6 待处理 / 6 仅展示
+提示: 动作：①一键开通共享环境（仅改 🟡 项） ②恢复保守设置；「更多 ▾」= 分项开关。🔴 安全敏感项（9-13）与 SMB1 永远只读展示。
+--------------------------------------------------------------
+  Server 服务 (LanmanServer)    运行中 · 自动  服务  供他人访问本机共享，就绪
+  Workstation 服务 (LanmanWorkstation)  运行中 · 自动  服务  访问他人共享的客户端侧，默认开启
+  网络发现服务四件套            1/4 运行中  服务  FDResPub=已停止 / fdPHost=已停止 / SSDPSRV=运行 / upnphost=已停止 · 缺席的服务让本机不出现在「网络」里，用「一键开通」修复
+  防火墙组：文件和打印机共享    已关闭 (0/43)  防火墙  （探测方式：INetFwPolicy2 COM）
+  防火墙组：网络发现（含服务联动）  部分开启 (26/58) · 服务 1/4  防火墙  ｜只开规则不启动服务=假开启，本行为规则+服务合并判定
+  网络配置文件                  公用 (Public) · 网络  网络  公用网络下共享/发现规则组整组不生效，用「一键开通」切到专用
+  不安全来宾登录 (AllowInsecureGuestAuth)  缺省(=0)  安全  键不存在=默认拒绝来宾登录，共享场景用「一键开通」
+  密码保护共享 (EveryoneIncludesAnonymous)  已关闭(=0)  安全  默认要求凭据访问共享，共享场景用「一键开通」
+  RestrictAnonymous（匿名枚举限制·Server 侧）  =0（放宽）  仅展示  🔴 安全敏感项，请手动决策（见 README）；本工具不提供开关
+  RestrictNullSessAccess / NullSessionShares（空会话）  缺省  仅展示  🔴 仅特殊遗留设备需要；安全敏感项，请手动决策（见 README）
+  SMB 签名 (RequireSecuritySignature)  客户端缺省 / 服务端缺省  仅展示  🔴 降签名有中间人风险；Win11 24H2 起默认强制签名，关闭会连不上新设备；请手动决策
+  组策略 HardenedPaths（UNC 加固）  已配置(空)  仅展示  🔴 与「开通共享」方向相反（限制 UNC 走 MSAUTH），列出仅作体检信息；请手动决策
+  组策略 LanmanWorkstation\Policies（域覆盖位）  未配置  仅展示  🔴 域环境 GPO 会刷回手工修改；列出仅作体检信息；请手动决策
+  SMB1 (minisrv/client 可选组件)  组件未安装（视为已禁用）  仅展示  SMB1 组件未安装（MRxSmb10 驱动键不存在），视为安全状态；如需精确核对可用 DISM /Online /Get-FeatureInfo /FeatureName:SMB1Protocol

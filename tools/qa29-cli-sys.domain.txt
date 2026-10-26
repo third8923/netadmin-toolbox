@@ -1,0 +1,15 @@
+﻿▶ 计算机名与域  (sys.domain)
+
+netadmin-toolbox.exe : 
+所在位置 行:508 字符: 283
++ ... t","sys.domain","net.sharehost")) { $out = & $exe run $m 2>&1 | Out-S ...
++                                                ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+工作组：WORKGROUP · 主机名 DESKTOP-A8DI9P4
+提示: 动作：①重命名计算机（目标框=新名称） ②加入域（目标框=域名[ user:pass]，路径框=OU 可选）；「更多 ▾」= 退域回工作组（目标框=user:pass 可空）/ 查看当前状态。
+--------------------------------------------------------------
+  DNS 主机名                    DESKTOP-A8DI9P4  标识  重命名目标（ComputerNameDnsHostname，≤63 字符）
+  NetBIOS 名                    DESKTOP-A8DI9P4  标识  由 DNS 名自动派生，≤15 字符（旧协议兼容）
+  工作组                        WORKGROUP  域加入  未加域（加域需域名+有权限的域账户凭据，重启生效）
