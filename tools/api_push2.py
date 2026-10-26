@@ -75,6 +75,18 @@ assert tr["sha"] == tree, f"tree mismatch: {tr['sha']} != {tree}"
 cm = req("POST", f"/repos/{REPO}/git/commits", {
     "message": msg, "tree": tree,
     "author": author, "committer": committer})
+# parents：若有父提交则补挂（POST commits 后补一次带 parents 的提交无法改 sha，故需在创建时带上；
+# 这里改为：检测本地父提交并重走一次带 parents 的创建）
+if cm["sha"] != LOCAL_COMMIT:
+    p = subprocess.run(["git", "rev-parse", "--verify", f"{LOCAL_COMMIT}^"],
+                       capture_output=True, text=True)
+    if p.returncode == 0:
+        parent = p.stdout.strip()
+        cm2 = req("POST", f"/repos/{REPO}/git/commits", {
+            "message": msg, "tree": tree,
+            "author": author, "committer": committer,
+            "parents": [parent]})
+        cm = cm2
 print("created commit:", cm["sha"])
 if cm["sha"] == LOCAL_COMMIT:
     print("EXACT MATCH — 复现本地提交成功")
