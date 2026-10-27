@@ -1,6 +1,6 @@
 sequenceDiagram
     autonumber
-    participant U as 用户
+    participant U as User
     participant M as main.cpp wWinMain
     participant C as common (RelaunchAsAdmin)
     participant W as AppWindow
@@ -10,83 +10,83 @@ sequenceDiagram
     participant OS as OS/SCM/Scheduler
 
     rect rgb(235, 244, 255)
-    Note over U,OS: 链路 1：R1 自动提权启动（防循环）
-    U->>M: 双击启动（标准用户）
-    M->>M: 解析 argv，剥离 --elev-attempted（若有）
-    alt 已提权 或 已尝试过（MZ_ELEV_ATTEMPTED）
-        M->>W: RunAppWindow（正常启动）
-    else 未提权且未尝试过
+    Note over U,OS: Flow 1: R1 auto-elevation launch (loop-proof)
+    U->>M: double-click launch (standard user)
+    M->>M: parse argv, strip --elev-attempted if present
+    alt already elevated or already attempted (MZ_ELEV_ATTEMPTED)
+        M->>W: RunAppWindow (normal start)
+    else not elevated and never attempted
         M->>C: SetEnvironmentVariable(MZ_ELEV_ATTEMPTED=1)
         M->>C: RelaunchAsAdmin(params, cwd)
         C->>OS: ShellExecuteExW(verb=runas)
-        alt UAC 同意
-            OS-->>M: 新实例（继承环境变量，标记=已尝试）
-            M-->>U: 当前实例退出，新实例进入 GUI
-        else UAC 取消(ERROR_CANCELLED)
+        alt UAC approved
+            OS-->>M: new instance (inherits env var, attempted=1)
+            M-->>U: current instance exits; new instance enters GUI
+        else UAC cancelled (ERROR_CANCELLED)
             C-->>M: ElevateResult::Cancelled
-            M->>W: 继续以标准用户运行 + 日志提示
+            M->>W: continue as standard user + log note
         end
     end
-    Note over U,OS: CLI 分支（main.cpp:15-36）永不进入提权逻辑
+    Note over U,OS: CLI branch (main.cpp:15-36) never enters elevation logic
     end
 
     rect rgb(235, 255, 240)
-    Note over U,OS: 链路 2：R5 清理执行（删除策略矩阵 + 逐文件回报）
-    U->>W: clean.system → 开始扫描
+    Note over U,OS: Flow 2: R5 cleaning (deletion matrix + per-file reporting)
+    U->>W: clean.system → start scan
     W->>MOD: StartWork(apply=false) → Run(ctx,out)
     MOD->>ENG: RunScan(SystemClean)
-    ENG->>ENG: 快扫（父子目录去重剪枝）
-    ENG-->>W: ScanOutcome（FileRepository 等已标 reportOnly）
-    U->>W: 勾选 → 执行清理 → ConfirmDialog(danger)
-    W->>MOD: StartWork(apply=true) → Apply(ctx,out)【工作线程】
-    loop 每个非 reportOnly 项
+    ENG->>ENG: fast scan (parent/child dedup pruning)
+    ENG-->>W: ScanOutcome（FileRepository etc. flagged reportOnly）
+    U->>W: select rows → clean → ConfirmDialog(danger)
+    W->>MOD: StartWork(apply=true) → Apply(ctx,out)(worker thread)
+    loop each non-reportOnly item
         MOD->>ENG: CleanDirectoryContentsEx(dir, cancel, report)
-        loop 每个文件（深度模式）
+        loop each file (deep mode)
             ENG->>OS: L1 DeleteFileW
-            alt 失败 5
-                ENG->>OS: L2 清文件+父目录属性后重试
-            else 失败 32/33
-                ENG->>OS: L3 退避重试 ×3（可取消）
-            else 仍失败（系统占用）
+            alt fails (5)
+                ENG->>OS: L2 clear file+parent attrs, retry
+            else fails (32/33)
+                ENG->>OS: L3 backoff retry x3 (cancellable)
+            else still fails (system in use)
                 ENG->>OS: L4 MoveFileEx(DELAY_UNTIL_REBOOT)
-            else Download 目录
-                ENG->>OS: L5 停 wuauserv/cryptsvc → 删 → 恢复服务
+            else Download folder
+                ENG->>OS: L5 stop wuauserv/cryptsvc → delete → restore services
             end
             ENG-->>MOD: CleanFileResult{path, code}
         end
     end
-    MOD-->>W: kMsgDone：真实释放量 + 失败分布（中文原因）
-    W-->>U: summary + 日志逐条 + 失败项列表
+    MOD-->>W: kMsgDone: freed bytes + failure breakdown (localized causes)
+    W-->>U: summary + per-item log + failure list
     end
 
     rect rgb(255, 246, 235)
-    Note over U,OS: 链路 3：R3/R4 扩展动作（服务管理 / 计划任务）
-    U->>W: sys.services → 扫描（tag=服务名索引）
-    W->>MOD: Run(ctx,out) 枚举 SCM
-    U->>W: 勾选服务 →「停止选中」或 更多▾ 菜单动作
+    Note over U,OS: Flow 3: R3/R4 extended actions (services / scheduled tasks)
+    U->>W: sys.services → scan (tag = service-name index)
+    W->>MOD: Run(ctx,out) enumerate SCM
+    U->>W: select services → Stop selected or overflow-menu action
     W->>W: ConfirmDialog（ModuleAction.warning）
-    W->>MOD: StartWork(actionIndex=N) → RunAction(ctx,N)【工作线程】
-    MOD->>OS: OpenService(SC_MANAGER_CONNECT+相应权限)
+    W->>MOD: StartWork(actionIndex=N) → RunAction(ctx,N)(worker thread)
+    MOD->>OS: OpenService(SC_MANAGER_CONNECT+required rights)
     MOD->>OS: ControlService(STOP) / StartServiceW / ChangeServiceConfigW
-    OS-->>MOD: 成功 / 错误码（Win32Err 中文映射）
+    OS-->>MOD: success / error code (Win32Err localized map)
     MOD-->>W: kMsgDone
-    W->>MOD: RefreshAfterAction()==true → 自动重扫
-    W-->>U: 状态列已更新 + 失败原因（如受保护服务）
+    W->>MOD: RefreshAfterAction()==true → auto rescan
+    W-->>U: state column updated + failure reason (e.g. protected service)
     end
 
     rect rgb(250, 240, 255)
-    Note over U,OS: 链路 4：R6 安全体检长任务
+    Note over U,OS: Flow 4: R6 security repair long task
     U->>W: sec.repair → DISM RestoreHealth
-    W->>MOD: RunAction【工作线程】
+    W->>MOD: RunAction(worker thread)
     MOD->>PR: RunProcess(dism..., timeout=30min, cancel)
-    loop 逐行输出
-        PR-->>MOD: onLine(行)
-        MOD-->>W: ctx.Log → LogView 实时滚动
+    loop line by line
+        PR-->>MOD: onLine(line)
+        MOD-->>W: ctx.Log → LogView live scroll
     end
-    alt 用户 Esc
-        U->>W: 取消
+    alt user presses Esc
+        U->>W: cancel
         W->>PR: cancel() → TerminateProcess
     end
-    PR-->>MOD: 退出码 + 全量输出
-    MOD-->>W: 解析结论（已修复/未发现/无法修复）
+    PR-->>MOD: exit code + full output
+    MOD-->>W: parse verdict (fixed / not found / unrepairable)
     end

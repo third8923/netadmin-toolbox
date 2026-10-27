@@ -1,83 +1,87 @@
-# 开发笔记 · purg.wulock 系统更新锁定（v2.15 需求 1）
+# Dev Notes · `purg.wulock` Windows Update Locking (v2.15, requirement #1)
 
-> 调研目标：还原 ghost / ESD 封装镜像中「锁定 Windows 更新」的完整手法，
-> 并给出本工具箱的封锁 / 还原对照实现。调研时间：v2.15 开发期。
+> Research goal: reconstruct the complete "lock Windows Update" playbook used by
+> ghost / ESD install images, and map it to this toolbox's lock / restore
+> implementation. Researched during v2.15 development.
 
-## 一、封装镜像锁更新的完整手法（四层）
+## 1. The four-layer image-locking playbook
 
-### ① 组策略注册表封锁（核心层）
+### Layer 1 — Group policy registry lockdown (core)
 
-键：`HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`
-及其 AU 子键：`HKLM\...\WindowsUpdate\AU`
+Key: `HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate`
+and its `AU` subkey: `HKLM\...\WindowsUpdate\AU`
 
-| 值 | 含义 | 锁定值 |
+| Value | Meaning | Locked value |
 | --- | --- | --- |
-| `NoAutoUpdate` (DWORD) | 关闭自动更新 | 1 |
-| `DisableWindowsUpdateAccess` (DWORD) | 禁用 WU 访问（UX 与 API 双封） | 1 |
-| `DoNotConnectToWindowsUpdateInternetLocations` (DWORD) | 禁止连接 WU 互联网位置（内网 WSUS 语义，公网同样生效） | 1 |
-| `SetDisableUXWUAccess` (DWORD) | 设置页隐藏「检查更新」按钮（AU 子键） | 1 |
-| `ExcludeWUDriversInQualityUpdate` (DWORD) | 质量更新不携带驱动 | 1 |
+| `NoAutoUpdate` (DWORD) | Disable automatic updates | 1 |
+| `DisableWindowsUpdateAccess` (DWORD) | Block WU access (UX + API) | 1 |
+| `DoNotConnectToWindowsUpdateInternetLocations` (DWORD) | Block WU internet locations (WSUS semantics, also effective on public network) | 1 |
+| `SetDisableUXWUAccess` (DWORD) | Hide "Check for updates" in Settings (AU subkey) | 1 |
+| `ExcludeWUDriversInQualityUpdate` (DWORD) | Exclude drivers from quality updates | 1 |
 
-封装镜像通常还会顺手写 `WUServer` / `WUStatusServer` 指向 127.0.0.1 的假 WSUS，
-本模块扫描时一并列报，锁定时不写假地址（留空即可，`DoNotConnect...=1` 已足够）。
+Ghost images also typically write `WUServer` / `WUStatusServer` pointing at a
+fake 127.0.0.1 WSUS. The scanner lists these; locking does **not** write fake
+addresses (leaving them empty is enough — `DoNotConnect...=1` covers it).
 
-### ② 服务禁用（自愈对抗层）
+### Layer 2 — Service disablement (self-heal countermeasures)
 
-| 服务 | 默认启动类型 | 说明 |
+| Service | Default start | Notes |
 | --- | --- | --- |
-| `wuauserv` | 手动(demand) | Windows Update 主服务 |
-| `UsoSvc` | 自动(auto) | 更新会话编排器 |
-| `WaaSMedicSvc` | 手动(demand) | **Windows 更新医助——被 ACL 保护，ChangeServiceConfig 会被拒绝**，需直写注册表 `HKLM\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc` 的 `Start=4`（禁用） |
-| `DoSvc` | 自动(延迟) | 传递优化 |
+| `wuauserv` | manual (demand) | Windows Update main service |
+| `UsoSvc` | automatic | Update Session Orchestrator |
+| `WaaSMedicSvc` | manual (demand) | **Windows Update Medic — ACL-protected; `ChangeServiceConfig` is denied.** Requires direct registry write `HKLM\SYSTEM\CurrentControlSet\Services\WaaSMedicSvc` `Start=4` |
+| `DoSvc` | automatic (delayed) | Delivery Optimization |
 
-WaaSMedicSvc 自愈对抗：其 `FailureActions`（REG_BINARY）中含 `01 00 00 00`
-（SC_ACTION_RESTART），服务被停后会自动拉起。封锁时把该动作字节改为
-`00 00 00 00`（SC_ACTION_NONE），防止「禁用了又被医活」。
-（该键被 TrustedInstaller 保护，需先取得所有权再改，或以 SYSTEM 权限写入；
-非提权时如实报拒绝并计数。）
+WaaSMedic self-heal countermeasure: its `FailureActions` (REG_BINARY) contains
+`01 00 00 00` (SC_ACTION_RESTART), so the service is relaunched after being
+stopped. Locking patches those action bytes to `00 00 00 00` (SC_ACTION_NONE)
+to prevent "disabled, then healed back".
+(The key is TrustedInstaller-protected: take ownership first, or write as
+SYSTEM; non-elevated runs honestly report denial and count it.)
 
-### ③ 计划任务禁用
+### Layer 3 — Scheduled task disablement
 
-两个目录的全部任务置 Enabled=false（taskschd COM `put_Enabled`）：
+All tasks in two folders set to `Enabled=false` (taskschd COM `put_Enabled`):
 
-* `\Microsoft\Windows\WindowsUpdate\*`（Automatic App Update、Scheduled Start、SIH 等）
-* `\Microsoft\Windows\UpdateOrchestrator\*`（Universal Orchestrator Start、
-  Schedule Scan、Workstation 等十几个编排任务）
+* `\Microsoft\Windows\WindowsUpdate\*` (Automatic App Update, Scheduled Start, SIH, ...)
+* `\Microsoft\Windows\UpdateOrchestrator\*` (a dozen+ orchestrator tasks)
 
-个别任务受保护拒绝时记录跳过（不中断、不伪造成功）。
+Tasks that refuse (protected) are recorded and skipped — no aborting, no fake success.
 
-### ④ hosts 域名拦截（可选开关，默认关）
+### Layer 4 — hosts blocking (optional toggle, off by default)
 
-向 `C:\Windows\System32\drivers\etc\hosts` 追加带标记注释块：
+Appends a flagged comment block to `C:\Windows\System32\drivers\etc\hosts`:
 
 ```
 # >>> NetAdmin Toolbox WU Lock (v2.15) >>>
 127.0.0.1 download.windowsupdate.com
 127.0.0.1 update.microsoft.com
-...（少量常用更新域名，不堆砌长名单以免误伤/杀软误报）
+... (a small set of common update domains — no long lists, to avoid collateral damage / AV heuristics)
 # <<< NetAdmin Toolbox WU Lock <<<
 ```
 
-还原 = 删除两标记行之间的整块。注意：仅 `DoNotConnectToWindowsUpdateInternetLocations`
-类策略封锁已足够时不必启用此项（hosts 拦截对使用 CDN 的直连域名时效性差，作为兜底）。
+Restore = delete everything between the two marker lines. Note: when policy
+lockdown alone suffices, leave this off (hosts blocking of CDN-fronted domains
+ages poorly; it is a last-resort layer).
 
-### ⑤ 主页锁定手法（引用 v2.14，不在本模块重复实现）
+### Layer 5 — Homepage locking (covered by v2.14, not re-implemented here)
 
-ghost 封装同源的「主页锁定」三件套——SetupComplete.cmd 写 Start Page、
-Default User 的 NTUSER.DAT、浏览器策略 Homepage——已由 v2.14 `purg.homepage`
-覆盖（扫描+修复+策略锁/解锁），本模块不重复实现，见 purgmods2.cpp。
+The ghost-image "homepage lock" trio — SetupComplete.cmd writing Start Page,
+Default User's NTUSER.DAT, browser policy Homepage — is already covered by
+v2.14 `purg.homepage` (scan + repair + policy lock/unlock). See purgmods2.cpp.
 
-## 二、本模块实现对照（purgmods3.cpp / purg.wulock）
+## 2. Implementation map (purgmods3.cpp / purg.wulock)
 
-| 封装手法 | 扫描（Run） | 锁定（Actions[0]） | 还原（Actions[1]） |
+| Technique | Scan (Run) | Lock (Actions[0]) | Restore (Actions[1]) |
 | --- | --- | --- | --- |
-| 策略封锁 | 枚举 WindowsUpdate 与 AU 键全部值 | 写 5 个封锁值 | 按备份 TSV 写回原值/删值 |
-| 服务禁用 | OpenSCManager + QueryServiceConfig + QueryServiceStatus（不用 sc.exe，沙箱黑名单） | ChangeServiceConfig→DISABLED，被拒（WaaSMedicSvc）则直写 Start=4 + FailureActions 01→00，尝试 ControlService STOP | Start 恢复：wuauserv=demand / UsoSvc=auto / WaaSMedicSvc=demand / DoSvc=auto（备份有原值时按原值） |
-| 计划任务 | taskschd COM 枚举两目录任务状态（MinGW get_Item 坑：Task/FolderCollection 用 VARIANT 下标，见 taskmods.cpp 范式） | 全部 put_Enabled(false)，个别拒绝记录跳过 | put_Enabled(true) |
-| hosts 拦截 | 检查标记块是否存在 | Field 勾选（填 yes/开，默认关）才追加 | 移除标记块 |
+| Policy lockdown | Enumerate all values under WindowsUpdate & AU | Write 5 lock values | Write back original / delete per backup TSV |
+| Service disable | OpenSCManager + QueryServiceConfig + QueryServiceStatus (no sc.exe — sandbox blacklisted) | ChangeServiceConfig → DISABLED; if denied (WaaSMedicSvc) direct-write Start=4 + FailureActions 01→00; attempt ControlService STOP | Restore Start: wuauserv=demand / UsoSvc=auto / WaaSMedicSvc=demand / DoSvc=auto (original values when backed up) |
+| Scheduled tasks | taskschd COM enumerate both folders (MinGW get_Item quirk: Task/FolderCollection take VARIANT subscripts — see taskmods.cpp) | All `put_Enabled(false)`, refusals recorded & skipped | `put_Enabled(true)` |
+| hosts block | Check for marker block | Append only when the Field toggle is set (default off) | Remove marker block |
 
-* 备份：exe 目录 `wulock-backup.tsv`，行格式
-  `SET \t HKLM \t 子键 \t 值名 \t 类型 \t 数据` / `SVC \t 名称 \t 原Start` /
-  `TASK \t 任务路径 \t 原Enabled`（复用 purgcore `EscapeField` 转义）。
-* 权限：CLI 永不提权；HKLM/服务/任务写失败如实计数并用 ErrorTextZh 中文归因
-  （与 purg.homepage 同语义）。GUI 用户可用右上角「以管理员重启」后重试。
+* Backup: `wulock-backup.tsv` next to the exe; row formats
+  `SET \t HKLM \t subkey \t value \t type \t data` / `SVC \t name \t origStart` /
+  `TASK \t task path \t origEnabled` (reuses purgcore `EscapeField` escaping).
+* Permissions: the CLI never elevates; HKLM/service/task write failures are
+  honestly counted with `ErrorTextZh` attribution (same semantics as
+  purg.homepage). GUI users can hit "Restart as administrator" and retry.

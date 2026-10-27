@@ -21,7 +21,7 @@ classDiagram
         +Apply(ctx, out) void
         +SupportsUndo() bool
         +Undo(ctx, out) void
-        --v2.8 新增--
+        --added in v2.8--
         +Actions() vector~ModuleAction~
         +RunAction(ctx, actionIndex, out) void
         +RefreshAfterAction() bool
@@ -71,13 +71,13 @@ classDiagram
         +reportOnly : bool
         +hint : wstring
         +partial : bool
-        --v2.8 新增--
+        --added in v2.8--
         +emptyRecycleBin : bool
         +stopServiceFirst : bool
     }
 
     class CleanReport {
-        <<v2.8 新增 cleanresult.h>>
+        <<cleanresult.h, added v2.8>>
         +freedBytes : u64
         +fileOk : int
         +fileFail : int
@@ -87,7 +87,7 @@ classDiagram
     }
 
     class CleanerEngine {
-        <<v2.8 重构 cleaner.cpp>>
+        <<cleaner.cpp refactored v2.8>>
         +RunScan(kind, opt, progress, cancel) ScanOutcome
         +DeleteFileSmart(path, cancel, report) DeleteStatus
         +CleanDirectoryContentsEx(dir, cancel, report) u64
@@ -98,7 +98,7 @@ classDiagram
     }
 
     class ProcessRunner {
-        <<v2.8 新增 procrun.h>>
+        <<procrun.h, added v2.8>>
         +RunProcess(cmdline, opt, fullOut)$ int
         -readThread : thread
         -waitThread : thread
@@ -111,7 +111,7 @@ classDiagram
     }
 
     class SysProcessMgrMod {
-        <<sys.process 改造>>
+        <<sys.process extended>>
         -pids_ vector~DWORD~
         +RunAction(ctx, 0, out) void
         -TerminateSelected(ctx, out) void
@@ -119,7 +119,7 @@ classDiagram
     }
 
     class SysSvcMgrMod {
-        <<sys.services 改造>>
+        <<sys.services extended>>
         -names_ vector~wstring~
         +Actions() vector~ModuleAction~
         +RunAction(ctx, idx, out) void
@@ -128,7 +128,7 @@ classDiagram
     }
 
     class SysTaskMgrMod {
-        <<sys.tasks 新增>>
+        <<sys.tasks added>>
         -taskPaths_ vector~wstring~
         +Run(ctx, out) void
         +RunAction(ctx, idx, out) void
@@ -139,7 +139,7 @@ classDiagram
     }
 
     class SecRepairMod {
-        <<sec.repair 新增>>
+        <<sec.repair added>>
         +Actions() vector~ModuleAction~
         +RunAction(ctx, idx, out) void
         -RunRepair(cmdline) void
@@ -152,17 +152,17 @@ classDiagram
         -ShowMoreActionsMenu() void
     }
 
-    IModule <|.. ModuleRegistry : 注册
-    IModule ..> ModuleContext : 运行时注入
-    IModule ..> ModuleRow : 结果行
-    IModule ..> ModuleAction : v2.8 扩展动作
+    IModule <|.. ModuleRegistry : registers
+    IModule ..> ModuleContext : runtime injection
+    IModule ..> ModuleRow : result rows
+    IModule ..> ModuleAction : extended actions (v2.8)
     SysProcessMgrMod ..|> IModule
     SysSvcMgrMod ..|> IModule
     SysTaskMgrMod ..|> IModule
     SecRepairMod ..|> IModule
-    CleanerEngine ..> ScanItem : 产出
-    CleanerEngine ..> CleanReport : 逐文件回报
-    ProcessRunner ..> ProcRunOptions : 配置
-    SecRepairMod ..> ProcessRunner : 长任务
-    AppWindow ..> IModule : 路由 Run/Apply/Undo/RunAction
-    AppWindow ..> ModuleAction : 更多动作菜单
+    CleanerEngine ..> ScanItem : produces
+    CleanerEngine ..> CleanReport : per-file results
+    ProcessRunner ..> ProcRunOptions : config
+    SecRepairMod ..> ProcessRunner : long-running tasks
+    AppWindow ..> IModule : routes Run/Apply/Undo/RunAction
+    AppWindow ..> ModuleAction : more-actions menu
