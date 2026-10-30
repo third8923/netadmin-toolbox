@@ -98,7 +98,7 @@ const wchar_t* kMrxSmb10 = L"SYSTEM\\CurrentControlSet\\Services\\MRxSmb10";
 bool RequireElevation(ModuleContext& ctx, const wstring& label, ModuleResult& out) {
     if (IsElevated()) return true;
     out.summary = L"需要管理员权限：「" + label + L"」未执行";
-    out.hint = L"请以管理员身份运行本程序（启动时会自动请求提权）。";
+    out.hint = T(L"请以管理员身份运行本程序（启动时会自动请求提权）。");
     ctx.Log(L"  拒绝: 当前非管理员，动作「" + label + L"」需要管理员权限");
     out.canClean = true;
     return false;
@@ -511,8 +511,8 @@ public:
         else
             out.summary = I64(ready) + L" 就绪 / " + I64(todo) + L" 待处理 / " +
                           I64(info) + L" 仅展示";
-        out.hint = L"动作：①一键开通共享环境 ②恢复保守设置；「更多 ▾」= 分项开关 + "
-                   L"组策略安全项逐项编辑（红色危险项，逐项确认）。";
+        out.hint = wstring(T(L"动作：①一键开通共享环境 ②恢复保守设置；「更多 ▾」= 分项开关 + "))
+                   + T(L"组策略安全项逐项编辑（红色危险项，逐项确认）。");
         out.canClean = true;
         ctx.Report(100, L"共享环境体检完成");
     }

@@ -261,9 +261,9 @@ public:
                    rules_.size(), signN_, folderN_, whiteN_);
         out.summary = b;
         out.hint = rules_.empty()
-            ? L"还没有自定义规则。在上方填写类型与内容后点「添加规则」。"
-              L"内置 SoftCnKiller 特征库无需在此维护（在线更新自动管理）。"
-            : L"规则在下次「全盘查杀」时自动生效。选中后可删除；「更多 ▾」可导出规则包。";
+            ? wstring(T(L"还没有自定义规则。在上方填写类型与内容后点「添加规则」。"))
+              + T(L"内置 SoftCnKiller 特征库无需在此维护（在线更新自动管理）。")
+            : T(L"规则在下次「全盘查杀」时自动生效。选中后可删除；「更多 ▾」可导出规则包。");
         out.canClean = true;
         ctx.Log(out.summary);
     }
@@ -579,8 +579,8 @@ public:
                    fileCount, hits.size(), nGood);
         out.summary = b;
         out.hint = hits.empty()
-            ? L"未命中任何规则。规则写法见内置示例 rules\\yara\\builtin_pua.yar。"
-            : L"命中文件请人工核实后再处置（YARA 只做内容识别，不做自动删除）。";
+            ? T(L"未命中任何规则。规则写法见内置示例 rules\\yara\\builtin_pua.yar。")
+            : T(L"命中文件请人工核实后再处置（YARA 只做内容识别，不做自动删除）。");
         out.canClean = true;
     }
 
@@ -803,8 +803,8 @@ public:
                    home, hij, pol, lnk);
         out.summary = b;
         out.hint = finds_.empty()
-            ? L"未发现主页/搜索/策略/快捷方式劫持。可在上方填写主页后用「更多 ▾ → 锁定主页」防篡改。"
-            : L"填写目标主页后点「修复并设置主页」；或「更多 ▾」锁定主页（策略级防篡改）。";
+            ? T(L"未发现主页/搜索/策略/快捷方式劫持。可在上方填写主页后用「更多 ▾ → 锁定主页」防篡改。")
+            : T(L"填写目标主页后点「修复并设置主页」；或「更多 ▾」锁定主页（策略级防篡改）。");
         out.canClean = true;
     }
 

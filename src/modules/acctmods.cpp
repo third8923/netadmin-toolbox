@@ -159,7 +159,7 @@ const wchar_t* kLsaKey   = L"SYSTEM\\CurrentControlSet\\Control\\Lsa";
 bool RequireElevation(ModuleContext& ctx, const wstring& label, ModuleResult& out) {
     if (IsElevated()) return true;
     out.summary = L"需要管理员权限：「" + label + L"」未执行";
-    out.hint = L"请以管理员身份运行本程序（启动时会自动请求提权）。";
+    out.hint = T(L"请以管理员身份运行本程序（启动时会自动请求提权）。");
     ctx.Log(L"  拒绝: 当前非管理员，动作「" + label + L"」需要管理员权限");
     out.canClean = true;
     return false;
@@ -288,8 +288,8 @@ public:
 
         out.summary = L"共 " + U32((unsigned)users) + L" 个本地账户 · 自动登录" +
                       (hasAal ? L"已配置" : L"未配置");
-        out.hint = L"目标框=用户名，路径框=密码（留空=无密码）或「描述|密码」。"
-                   L"动作：①创建/更新账户 ②配置自动登录；「更多 ▾」= 关闭自动登录 / 删除指定账户。";
+        out.hint = wstring(T(L"目标框=用户名，路径框=密码（留空=无密码）或「描述|密码」。"))
+                   + T(L"动作：①创建/更新账户 ②配置自动登录；「更多 ▾」= 关闭自动登录 / 删除指定账户。");
         out.canClean = true;
         ctx.Report(100, L"账户盘点完成");
     }
@@ -465,8 +465,8 @@ private:
                     (pwd.empty() ? L"（空密码：UF_PASSWD_NOTREQD|UF_DONT_EXPIRE_PASSWD）"
                                  : L"（密码已设置，不回显）"));
             if (pwd.empty()) {
-                out.hint = L"空密码账户不能用于共享访问/网络登录（LSA "
-                           L"LimitBlankPasswordUse 默认限制），如需共享请设置密码。";
+                out.hint = wstring(T(L"空密码账户不能用于共享访问/网络登录（LSA "))
+                           + T(L"LimitBlankPasswordUse 默认限制），如需共享请设置密码。");
                 ctx.Log(L"  提示: 空密码账户受 LSA LimitBlankPasswordUse 限制，"
                         L"不能用于共享访问；交互登录不受影响");
             }
@@ -563,8 +563,8 @@ private:
             wstring dun;
             if (RegReadStr(HKEY_LOCAL_MACHINE, kWinlogon, L"DefaultUserName", dun) &&
                 _wcsicmp(dun.c_str(), name.c_str()) == 0) {
-                out.hint = L"注意：删除的账户正是自动登录账户，建议用「更多 ▾ → 关闭自动登录」"
-                           L"清理残留配置，否则开机可能卡在登录界面。";
+                out.hint = wstring(T(L"注意：删除的账户正是自动登录账户，建议用「更多 ▾ → 关闭自动登录」"))
+                           + T(L"清理残留配置，否则开机可能卡在登录界面。");
                 ctx.Log(L"  ⚠ 已删除账户与 Winlogon\\DefaultUserName 一致，建议关闭自动登录");
             }
         } else {
@@ -670,9 +670,9 @@ public:
         out.summary = (joined ? L"已加域：" + dnsDomain
                               : L"工作组：" + (langroup.empty() ? wstring(L"WORKGROUP") : langroup)) +
                       L" · 主机名 " + dnsHost;
-        out.hint = L"结构化输入：①重命名=名称框或「计算机名前缀」自动生成 ②加域=目标框填域名 + "
-                   L"下方「域管理员用户名/密码」字段（路径框=OU 可选）；"
-                   L"「更多 ▾」= 退域回工作组（凭据同上，工作组名字段生效）/ 查看当前状态。";
+        out.hint = wstring(T(L"结构化输入：①重命名=名称框或「计算机名前缀」自动生成 ②加域=目标框填域名 + "))
+                   + wstring(T(L"下方「域管理员用户名/密码」字段（路径框=OU 可选）；"))
+                   + T(L"「更多 ▾」= 退域回工作组（凭据同上，工作组名字段生效）/ 查看当前状态。");
         out.canClean = true;
         ctx.Report(100, L"计算机标识读取完成");
     }
@@ -888,10 +888,10 @@ private:
         ctx.Log(L"  已提交: 新 DNS 主机名回读 = " + readback);
         ctx.Log(L"  提示: 重启后生效，请自行重启（本工具不代重启）");
         out.hint = joined
-            ? wstring(L"本机已加域（") + curDomain +
-              L"）：改名后建议在域侧同步计算机账户；域 profile 可能无法加载，"
-              L"重启前请确认本地管理员密码已知。"
-            : L"重启后生效，请自行重启。";
+            ? wstring(T(L"本机已加域（")) + curDomain +
+              wstring(T(L"）：改名后建议在域侧同步计算机账户；域 profile 可能无法加载，"))
+              + T(L"重启前请确认本地管理员密码已知。")
+            : T(L"重启后生效，请自行重启。");
     }
 
     void DoJoinDomain(ModuleContext& ctx, ModuleResult& out) {
@@ -915,9 +915,9 @@ private:
         if (joinFailStreak_ >= 2) {
             out.summary = L"已连续失败 " + I64(joinFailStreak_) +
                           L" 次，为防计算机账户锁定已停止重试";
-            out.hint = L"请核对：①域名拼写 ②DNS 能否解析域 ③凭据是否为有加域权限的域账户"
-                       L"（格式：域名 user:pass）。可先用「网络诊断」排查 DNS，"
-                       L"或联系域管理员在 AD 中清理本机坏账户后再试。";
+            out.hint = wstring(T(L"请核对：①域名拼写 ②DNS 能否解析域 ③凭据是否为有加域权限的域账户"))
+                       + wstring(T(L"（格式：域名 user:pass）。可先用「网络诊断」排查 DNS，"))
+                       + T(L"或联系域管理员在 AD 中清理本机坏账户后再试。");
             ctx.Log(L"  停止: 连续失败达 2 次，不再自动重试");
             return;
         }
@@ -988,7 +988,7 @@ private:
         }
         ctx.Log(L"  ⚠ 域 profile 将无法再加载；重启前请确认本地管理员密码已知");
         ctx.Log(L"  提示: 重启后生效，请自行重启（本工具不代重启）");
-        out.hint = L"重启前请确认本地管理员密码已知，否则可能无法登录。";
+        out.hint = T(L"重启前请确认本地管理员密码已知，否则可能无法登录。");
         joinFailStreak_ = 0;
     }
 };

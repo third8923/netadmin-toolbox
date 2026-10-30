@@ -336,8 +336,8 @@ public:
         swprintf_s(b, 128, L"测速完成：%d/%d 个 DNS 可达；当前 %zu 个网卡（勾选 2 个 IP 可「应用选中」）",
                    okCnt, kDnsCount, adapters.size());
         out.summary = b;
-        out.hint = L"「自动优选」直接取最快两个；「应用选中」需勾选恰好 2 个 IP；"
-                   L"「更多 ▾」可还原自动获取 / 刷新 DNS 缓存。应用 DNS 需管理员权限。";
+        out.hint = wstring(T(L"「自动优选」直接取最快两个；「应用选中」需勾选恰好 2 个 IP；"))
+                   + T(L"「更多 ▾」可还原自动获取 / 刷新 DNS 缓存。应用 DNS 需管理员权限。");
         out.canClean = true;
         ctx.Report(100, L"DNS 测速完成");
     }

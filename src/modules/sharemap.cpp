@@ -470,7 +470,7 @@ public:
         wstring prefix, localIp, err;
         if (!AutoSweepPrefix(&prefix, &localIp, &err)) {
             out.summary = L"共享扫描：无法确定网段";
-            out.hint = err + L"；已映射区如上（若有）";
+            out.hint = err + T(L"；已映射区如上（若有）");
             ctx.Report(100, out.summary);
             return;
         }
@@ -719,7 +719,7 @@ public:
             notes += L"；已默认过滤管理共享 " + I64(filtered) + L" 个（IPC$/ADMIN$/X$）";
         if (credDenied > 0)
             notes += L"；" + I64(credDenied) + L" 台需凭据（枚举被拒）";
-        out.hint = L"勾选行后点「映射选中为网盘」；盘符在目标框指定（留空自动分配）" + notes;
+        out.hint = T(L"勾选行后点「映射选中为网盘」；盘符在目标框指定（留空自动分配）") + notes;
         if (!scanCache_.empty())
             ctx.Log(L"扫描缓存 " + I64((long long)scanCache_.size()) +
                     L" 条共享路径供映射动作使用");

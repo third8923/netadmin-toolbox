@@ -163,7 +163,7 @@ public:
         TaskComSession com;
         if (!com.Init()) {
             out.summary = com.error;
-            out.hint = L"本模块通过任务计划程序 COM 接口枚举，请确认 Task Scheduler 服务正在运行。";
+            out.hint = T(L"本模块通过任务计划程序 COM 接口枚举，请确认 Task Scheduler 服务正在运行。");
             return;
         }
 
@@ -195,7 +195,7 @@ public:
         swprintf_s(b, L"共 %zu 个计划任务 · 正在运行 %d · 已禁用 %d（含隐藏任务）",
                    out.rows.size(), running, disabledCnt);
         out.summary = b;
-        if (!IsElevated()) out.hint = L"提示：标准用户权限下部分系统任务信息可能读取不全。";
+        if (!IsElevated()) out.hint = T(L"提示：标准用户权限下部分系统任务信息可能读取不全。");
         out.canClean = true;
         ctx.Report(100, L"计划任务枚举完成");
     }
@@ -344,7 +344,7 @@ public:
         swprintf_s(b, L"%s完成：成功 %d，跳过 %d，失败 %d", kNames[actionIndex], ok, skip, fail);
         out.summary = b;
         if (fail > 0 && !IsElevated())
-            out.hint = L"部分操作失败，可能需要管理员权限（请提权后重试）。";
+            out.hint = T(L"部分操作失败，可能需要管理员权限（请提权后重试）。");
         out.canClean = true;
     }
 

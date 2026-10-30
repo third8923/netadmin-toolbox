@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
 
     // 逐个特性解析 apply/undo
     int files = 0, ops = 0, fails = 0;
-    printf("# 解析结果（JSON 行格式，供 Python 比对）\n");
+    printf(T(L"# 解析结果（JSON 行格式，供 Python 比对）\n"));
     for (auto& f : Features()) {
         for (int pass = 0; pass < 2; ++pass) {
             const wstring& key = pass == 0 ? f.applyKey : f.undoKey;
@@ -193,6 +193,6 @@ int main(int argc, char** argv) {
             }
         }
     }
-    fprintf(stderr, "\n解析文件 %d 个，共 %d 条操作，错误 %d\n", files, ops, fails);
+    fprintf(stderr, T(L"\n解析文件 %d 个，共 %d 条操作，错误 %d\n"), files, ops, fails);
     return fails == 0 ? 0 : 1;
 }

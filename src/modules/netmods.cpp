@@ -987,7 +987,7 @@ public:
         DWORD err = 0;
         if (!LoadAdapterAddresses(buf, &err)) {
             out.summary = L"获取网络适配器失败：" + FormatWinError(err);
-            out.hint = L"可尝试以管理员身份运行后重试";
+            out.hint = T(L"可尝试以管理员身份运行后重试");
             ctx.Log(out.summary);
             ctx.Report(100, out.summary);
             return;
@@ -1001,7 +1001,7 @@ public:
         }
         if (total == 0) {
             out.summary = L"未发现可用的网络适配器";
-            out.hint = L"可能是驱动异常，或运行在无网络的环境中";
+            out.hint = T(L"可能是驱动异常，或运行在无网络的环境中");
             ctx.Report(100, out.summary);
             return;
         }
@@ -1053,7 +1053,7 @@ public:
         }
 
         out.summary = L"共 " + ToW(total) + L" 个适配器，已连接 " + ToW(up) + L" 个";
-        out.hint = L"已跳过环回接口；虚拟网卡/隧道接口也会列出";
+        out.hint = T(L"已跳过环回接口；虚拟网卡/隧道接口也会列出");
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
     }
@@ -1262,9 +1262,9 @@ public:
                       ToW(udpCount) + L" 条，涉及 " + ToWU(pidSet.size()) + L" 个进程";
         if (cancelled) out.summary += L"（已取消，结果不完整）";
         if (noPerm > 0)
-            out.hint = L"有 " + ToW(noPerm) + L" 个进程名因权限不足无法读取（可尝试管理员运行）";
+            out.hint = T(L"有 ") + ToW(noPerm) + T(L" 个进程名因权限不足无法读取（可尝试管理员运行）");
         else
-            out.hint = L"侦听在 0.0.0.0 上的端口对所有网卡开放，请留意暴露到公网的服务";
+            out.hint = T(L"侦听在 0.0.0.0 上的端口对所有网卡开放，请留意暴露到公网的服务");
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
     }
@@ -1292,7 +1292,7 @@ public:
         WsaGuard wsa;
         if (!wsa.ok) {
             out.summary = L"Winsock 初始化失败，无法进行端口扫描";
-            out.hint = L"请检查系统网络组件（ws2_32.dll）是否正常";
+            out.hint = T(L"请检查系统网络组件（ws2_32.dll）是否正常");
             ctx.Report(100, out.summary);
             return;
         }
@@ -1308,7 +1308,7 @@ public:
         wstring err;
         if (!ResolveIpv4(host, &ip, &err)) {
             out.summary = L"无法解析目标 " + host + L"：" + err;
-            out.hint = L"请填写 IP 或域名，例如 127.0.0.1、192.168.1.1、example.com";
+            out.hint = T(L"请填写 IP 或域名，例如 127.0.0.1、192.168.1.1、example.com");
             ctx.Log(out.summary);
             ctx.Report(100, out.summary);
             return;
@@ -1402,11 +1402,11 @@ public:
                       ToWU(elapsed) + L" ms";
         if (cancelled) out.summary += L"（已取消，结果不完整）";
         if (scanFail)
-            out.hint = L"部分套接字创建失败，结果可能不完整（检查安全软件/防火墙）";
+            out.hint = T(L"部分套接字创建失败，结果可能不完整（检查安全软件/防火墙）");
         else if (openPorts.empty())
-            out.hint = L"未发现开放端口：目标可能离线、禁用了这些端口或被防火墙拦截";
+            out.hint = T(L"未发现开放端口：目标可能离线、禁用了这些端口或被防火墙拦截");
         else
-            out.hint = L"仅扫描常见端口，单项超时 300ms；判断开放依据 TCP 三次握手";
+            out.hint = T(L"仅扫描常见端口，单项超时 300ms；判断开放依据 TCP 三次握手");
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
     }
@@ -1439,14 +1439,14 @@ public:
         if (target.empty()) {
             if (!AutoSweepPrefix(&prefix, &localIp, &err)) {
                 out.summary = L"局域网扫描：无法确定网段";
-                out.hint = err + L"；也可以在目标框填写 192.168.1 这样的网段";
+                out.hint = err + T(L"；也可以在目标框填写 192.168.1 这样的网段");
                 ctx.Report(100, out.summary);
                 return;
             }
         } else {
             if (!ParseSweepPrefix(target, &prefix, &err)) {
                 out.summary = L"目标格式不正确：" + err;
-                out.hint = L"目标可填 192.168.1 / 192.168.1.0 / 192.168.1.0/24 / 192.168.1.55";
+                out.hint = T(L"目标可填 192.168.1 / 192.168.1.0 / 192.168.1.0/24 / 192.168.1.55");
                 ctx.Report(100, out.summary);
                 return;
             }
@@ -1556,9 +1556,9 @@ public:
                 ? (L"；" + ToW(missingMac) + L" 台主机 MAC 显示 —（ARP 缓存暂无记录，跨网段时正常）")
                 : L"";
         if (aliveIdx.empty())
-            out.hint = L"未发现存活主机：可能网段错误、防火墙禁 ping，或设备不在线" + rawNote;
+            out.hint = T(L"未发现存活主机：可能网段错误、防火墙禁 ping，或设备不在线") + rawNote;
         else
-            out.hint = L"基于 ICMP 回显判断存活；MAC 取自 ARP 缓存" + dnsNote + macNote + rawNote;
+            out.hint = T(L"基于 ICMP 回显判断存活；MAC 取自 ARP 缓存") + dnsNote + macNote + rawNote;
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
     }
@@ -1590,7 +1590,7 @@ public:
         wstring target = EffectiveTarget(target_, ctx);
         if (target.empty()) {
             out.summary = L"请输入要诊断的目标（IP 或域名）";
-            out.hint = L"例如 127.0.0.1、www.baidu.com、192.168.1.1";
+            out.hint = T(L"例如 127.0.0.1、www.baidu.com、192.168.1.1");
             ctx.Report(100, out.summary);
             return;
         }
@@ -1601,7 +1601,7 @@ public:
         if (!ResolveIpv4(target, &ip, &err)) {
             out.rows.push_back(MakeRow(L"目标解析", L"失败", L"—", target + L"：" + err, 100));
             out.summary = L"网络诊断失败：无法解析 " + target;
-            out.hint = L"请检查域名拼写、DNS 设置或网络连接";
+            out.hint = T(L"请检查域名拼写、DNS 设置或网络连接");
             ctx.Report(100, out.summary);
             return;
         }
@@ -1722,13 +1722,13 @@ public:
         const wstring pingNote =
             ping.UsingRaw() ? L"；ICMP 辅助 API 被系统拒绝，Ping 使用原始套接字" : L"";
         if (recv == 0)
-            out.hint = L"Ping 无响应：目标可能禁 ping、离线或被防火墙拦截，请以 TCP 结果为准" +
+            out.hint = T(L"Ping 无响应：目标可能禁 ping、离线或被防火墙拦截，请以 TCP 结果为准") +
                        pingNote;
         else if (openCount == 0)
-            out.hint = L"Ping 可达但 80/443 均不可连接：可能只开放了其它端口或被防火墙过滤" +
+            out.hint = T(L"Ping 可达但 80/443 均不可连接：可能只开放了其它端口或被防火墙过滤") +
                        pingNote;
         else
-            out.hint = L"诊断完成：目标网络层与应用层均可访问" + pingNote;
+            out.hint = T(L"诊断完成：目标网络层与应用层均可访问") + pingNote;
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
     }
@@ -1756,13 +1756,13 @@ public:
         DWORD rc = GetIpForwardTable(nullptr, &size, FALSE);
         if (rc == ERROR_NO_DATA) {
             out.summary = L"IPv4 路由表为空";
-            out.hint = L"系统可能没有配置任何 IPv4 路由";
+            out.hint = T(L"系统可能没有配置任何 IPv4 路由");
             ctx.Report(100, out.summary);
             return;
         }
         if (rc != ERROR_INSUFFICIENT_BUFFER) {
             out.summary = L"读取路由表失败：" + FormatWinError(rc);
-            out.hint = L"可尝试以管理员身份运行";
+            out.hint = T(L"可尝试以管理员身份运行");
             ctx.Report(100, out.summary);
             return;
         }
@@ -1798,7 +1798,7 @@ public:
         out.summary = L"IPv4 路由 " + ToWU(tab->dwNumEntries) + L" 条（默认路由 " +
                       ToW(defaultRoutes) + L" 条，直连 " + ToW(direct) + L" 条）";
         if (cancelled) out.summary += L"（已取消，结果不完整）";
-        out.hint = L"仅列出 IPv4 路由；IPv6 路由可在命令行用 route print -6 查看";
+        out.hint = T(L"仅列出 IPv4 路由；IPv6 路由可在命令行用 route print -6 查看");
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
     }
@@ -1823,13 +1823,13 @@ public:
         DWORD rc = GetIpNetTable(nullptr, &size, FALSE);
         if (rc == ERROR_NO_DATA) {
             out.summary = L"ARP 表为空";
-            out.hint = L"可能尚未与任何局域网设备通信";
+            out.hint = T(L"可能尚未与任何局域网设备通信");
             ctx.Report(100, out.summary);
             return;
         }
         if (rc != ERROR_INSUFFICIENT_BUFFER) {
             out.summary = L"读取 ARP 表失败：" + FormatWinError(rc);
-            out.hint = L"可尝试以管理员身份运行";
+            out.hint = T(L"可尝试以管理员身份运行");
             ctx.Report(100, out.summary);
             return;
         }
@@ -1864,7 +1864,7 @@ public:
         }
         out.summary = L"ARP 记录 " + ToWU(tab->dwNumEntries) + L" 条（动态 " + ToW(dyn) +
                       L" / 静态 " + ToW(sta) + L"）";
-        out.hint = L"ARP 表为 IPv4 邻居缓存，会随通信自动增删；需管理员权限可完整读取";
+        out.hint = T(L"ARP 表为 IPv4 邻居缓存，会随通信自动增删；需管理员权限可完整读取");
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
     }
@@ -1907,8 +1907,8 @@ public:
                                    ToWU(ms) + L" ms", detail, ok ? 100 : 0));
         out.summary = ok ? (L"DNS 解析缓存已刷新，用时 " + ToWU(ms) + L" ms")
                          : L"刷新 DNS 缓存失败";
-        out.hint = ok ? L"若域名仍解析异常，可再执行 ipconfig /release 再 /renew（需管理员）"
-                      : L"请尝试以管理员身份运行本工具";
+        out.hint = ok ? T(L"若域名仍解析异常，可再执行 ipconfig /release 再 /renew（需管理员）")
+                      : T(L"请尝试以管理员身份运行本工具");
         ctx.Log(out.summary + L"：" + detail);
         ctx.Report(100, out.summary);
     }
@@ -1935,7 +1935,7 @@ public:
         DWORD rc = WlanOpenHandle(2, nullptr, &negotiated, &h);
         if (rc != ERROR_SUCCESS) {
             out.summary = L"无法打开无线服务：" + FormatWinError(rc);
-            out.hint = L"请确认「WLAN AutoConfig (WlanSvc)」服务已启动，且本机有无线网卡";
+            out.hint = T(L"请确认「WLAN AutoConfig (WlanSvc)」服务已启动，且本机有无线网卡");
             ctx.Log(out.summary);
             ctx.Report(100, out.summary);
             return;
@@ -1946,7 +1946,7 @@ public:
         if (rc != ERROR_SUCCESS || !list) {
             WlanCloseHandle(h, nullptr);
             out.summary = L"枚举无线接口失败：" + FormatWinError(rc);
-            out.hint = L"无线服务可能异常，可尝试重启 WLAN AutoConfig 服务";
+            out.hint = T(L"无线服务可能异常，可尝试重启 WLAN AutoConfig 服务");
             ctx.Report(100, out.summary);
             return;
         }
@@ -1956,7 +1956,7 @@ public:
             WlanFreeMemory(list);
             WlanCloseHandle(h, nullptr);
             out.summary = L"未检测到无线网卡";
-            out.hint = L"本机可能没有 Wi-Fi 硬件，或无线网卡驱动未安装";
+            out.hint = T(L"本机可能没有 Wi-Fi 硬件，或无线网卡驱动未安装");
             ctx.Log(out.summary);
             ctx.Report(100, out.summary);
             return;
@@ -2027,8 +2027,8 @@ public:
         WlanCloseHandle(h, nullptr);
 
         out.summary = L"检测到 " + ToW(n) + L" 个无线接口，已连接 " + ToW(connected) + L" 个";
-        out.hint = connected ? L"信号质量为 Windows 综合评分（0-100），高于 70 一般较稳定"
-                             : L"当前没有已连接的无线网络";
+        out.hint = connected ? T(L"信号质量为 Windows 综合评分（0-100），高于 70 一般较稳定")
+                             : T(L"当前没有已连接的无线网络");
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
     }

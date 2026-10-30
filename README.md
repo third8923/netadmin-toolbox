@@ -27,6 +27,7 @@
 | Version | Key additions |
 | --- | --- |
 | v2.18 | **Custom vector icon set**: all 69 sidebar entries redrawn as in-house 24×24 stroke icons (GDI+ AA, single stroke weight, rounded caps) — replaces Segoe MDL2 glyphs whose missing-codepoint fallback rendered as exclamation boxes on some systems |
+| v2.18 | **Full English UI**: the zh→en lookup table grew from 477 to 1,004 entries — every menu, group, module title/description, button, hint, confirm dialog, toast, CLI help line and theme name is now translated; English is selected via the language button or `[ui] lang=en-US` in the ini |
 | v2.17 | Full-UI rebrand to the biohacker.fun **VI-D2 "Metamorphosis Wing"** design system: paper/ink dual themes (Ctrl+T), butterfly vector logo + `biohacker·fun` wordmark (GDI+ AA), embedded Baloo 2 / JetBrains Mono subsets (OFL 1.1), brand empty/error states, splash screen, About-page morph timeline, WCAG-AA verified tokens (69 modules unchanged) |
 | v2.16 | Mesh Assistant (`net.mesh`): headscale/Tailscale onboarding, config-string import, built-in QR encoder |
 | v2.15 | Update locker (`purg.wulock`), graphical hosts editor, DNS optimizer (`net.dnsopt`), i18n expansion, **Remote Terminal** group (`net.sessions` / `net.tunnel` / `net.serial`) |
@@ -368,6 +369,7 @@ tools/              QA & test scripts
 5. **winget operations recommend elevation** (machine-scope installers trigger UAC); a few installers still show their own UI.
 6. **Hosts editing** always backs up to `hosts.bak` first and restores the read-only attribute afterwards.
 7. **Remote terminal**: connection passwords are never persisted; tunnel handles live only while the app runs; serial interactive TUI deferred.
+8. **English UI covers all menus/labels/hints/dialogs/CLI**; runtime scan rows and verbose console logs of some modules still print in Chinese (fall-back by design, scheduled for a later pass).
 8. **Antivirus**: unsigned releases may trigger heuristics on some engines (signature data is base64-embedded to avoid content scanning, and NT-internals detection is used only for hidden-process discovery). Signed releases are recommended for fleet deployment.
 9. Some rarely-installed software paths report nothing on machines where they simply don't exist.
 

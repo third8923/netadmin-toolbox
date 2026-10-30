@@ -394,8 +394,8 @@ bool EnsureWinget(ModuleContext& ctx, ModuleResult& out) {
         return true;
     }
     out.summary = L"未检测到 winget（Windows 包管理器），软件管家暂不可用";
-    out.hint = L"winget 随「应用安装程序」分发：请在 Microsoft Store 搜索安装"
-               L"「应用安装程序」，或将系统升级到 Windows 10 1709+ / Windows 11 后重试";
+    out.hint = wstring(T(L"winget 随「应用安装程序」分发：请在 Microsoft Store 搜索安装"))
+               + T(L"「应用安装程序」，或将系统升级到 Windows 10 1709+ / Windows 11 后重试");
     out.canClean = false;
     ctx.Log(L"✗ 未检测到 winget，本次操作已取消（不弹窗、不崩溃）");
     return false;
@@ -562,8 +562,8 @@ public:
         swprintf_s(buf, L"共 %zu 款 · 已装 %d · 未装 %zu",
                    items_.size(), nInstalled, items_.size() - (size_t)nInstalled);
         out.summary = buf;
-        out.hint = L"勾选后点「安装选中」；不勾选 = 安装本榜全部未安装软件。"
-                   L"卸载请勾选后点「卸载选中」";
+        out.hint = wstring(T(L"勾选后点「安装选中」；不勾选 = 安装本榜全部未安装软件。"))
+                   + T(L"卸载请勾选后点「卸载选中」");
         out.canClean = !items_.empty();
     }
 
@@ -590,7 +590,7 @@ public:
         }
         if (targets.empty()) {
             out.summary = L"没有需要安装的软件（已全部安装或未勾选）";
-            out.hint = L"不勾选直接点「安装选中」= 安装本榜全部未安装软件";
+            out.hint = T(L"不勾选直接点「安装选中」= 安装本榜全部未安装软件");
             out.canClean = !items_.empty();
             return;
         }
@@ -603,10 +603,10 @@ public:
         out.summary = buf;
         if (!failed.empty()) {
             failed.pop_back();   // 去掉末尾顿号
-            out.hint = L"失败项：" + failed +
-                       L"（多为网络中断或安装器需要交互；可重试，或以管理员身份运行）";
+            out.hint = T(L"失败项：") + failed +
+                       T(L"（多为网络中断或安装器需要交互；可重试，或以管理员身份运行）");
         }
-        if (cancelled) out.hint = L"已被用户中止（Esc）";
+        if (cancelled) out.hint = T(L"已被用户中止（Esc）");
         out.canClean = !items_.empty();
     }
 
@@ -616,7 +616,7 @@ public:
     void Undo(ModuleContext& ctx, ModuleResult& out) override {
         if (selection_.empty()) {
             out.summary = L"请先勾选要卸载的软件";
-            out.hint = L"在列表中勾选后点击「卸载选中」；本操作通过 winget uninstall 执行";
+            out.hint = T(L"在列表中勾选后点击「卸载选中」；本操作通过 winget uninstall 执行");
             return;
         }
         vector<SoftRef> targets;
@@ -634,9 +634,9 @@ public:
         out.summary = buf;
         if (!failed.empty()) {
             failed.pop_back();
-            out.hint = L"失败项：" + failed + L"（可重试，或以管理员身份运行）";
+            out.hint = T(L"失败项：") + failed + T(L"（可重试，或以管理员身份运行）");
         }
-        if (cancelled) out.hint = L"已被用户中止（Esc）";
+        if (cancelled) out.hint = T(L"已被用户中止（Esc）");
     }
 
 private:
@@ -679,7 +679,7 @@ public:
         keyword_ = TrimStr(target_);
         if (keyword_.empty()) {
             out.summary = L"请输入搜索关键词";
-            out.hint = L"例如：python / 压缩 / 浏览器 / vlc / 微信";
+            out.hint = T(L"例如：python / 压缩 / 浏览器 / vlc / 微信");
             out.canClean = false;
             return;
         }
@@ -705,13 +705,13 @@ public:
         }
         if (out.rows.empty()) {
             out.summary = L"未找到与「" + keyword_ + L"」匹配的软件";
-            out.hint = L"换个关键词试试，如 python / 压缩 / 浏览器 / vlc / 微信";
+            out.hint = T(L"换个关键词试试，如 python / 压缩 / 浏览器 / vlc / 微信");
             out.canClean = false;
             return;
         }
         out.summary = L"找到 " + std::to_wstring(out.rows.size()) + L" 个结果（关键词：" +
                       keyword_ + L"）";
-        out.hint = L"勾选后点「安装选中」安装，点「卸载选中」卸载；未勾选 = 全部安装";
+        out.hint = T(L"勾选后点「安装选中」安装，点「卸载选中」卸载；未勾选 = 全部安装");
         out.canClean = true;
     }
 
@@ -730,16 +730,16 @@ public:
         out.summary = buf;
         if (!failed.empty()) {
             failed.pop_back();
-            out.hint = L"失败项：" + failed;
+            out.hint = T(L"失败项：") + failed;
         }
-        if (cancelled) out.hint = L"已被用户中止（Esc）";
+        if (cancelled) out.hint = T(L"已被用户中止（Esc）");
     }
 
     bool SupportsUndo() const override { return true; }
     void Undo(ModuleContext& ctx, ModuleResult& out) override {
         if (selection_.empty()) {
             out.summary = L"请先勾选要卸载的软件";
-            out.hint = L"在搜索结果中勾选后点击「卸载选中」";
+            out.hint = T(L"在搜索结果中勾选后点击「卸载选中」");
             return;
         }
         vector<SoftRef> targets = PickTargets();
@@ -752,9 +752,9 @@ public:
         out.summary = buf;
         if (!failed.empty()) {
             failed.pop_back();
-            out.hint = L"失败项：" + failed;
+            out.hint = T(L"失败项：") + failed;
         }
-        if (cancelled) out.hint = L"已被用户中止（Esc）";
+        if (cancelled) out.hint = T(L"已被用户中止（Esc）");
     }
 
 private:
@@ -806,7 +806,7 @@ public:
         int code = RunWingetCapture(CmdList(), kWingetTimeoutMs, &o);
         if (code != 0) {
             out.summary = L"读取已安装列表失败（winget 退出码 " + std::to_wstring(code) + L"）";
-            out.hint = L"请确认 winget 正常：命令行执行 winget list 查看";
+            out.hint = T(L"请确认 winget 正常：命令行执行 winget list 查看");
             out.canClean = false;
             ctx.Log(L"✗ winget list 失败（退出码 " + std::to_wstring(code) + L"）");
             return;
@@ -826,7 +826,7 @@ public:
         }
         out.summary = L"已安装 " + std::to_wstring(items_.size()) + L" 个（winget 可管理 " +
                       std::to_wstring(nManaged) + L" 个）";
-        out.hint = L"双击行可查看详情；勾选后点「卸载选中」卸载";
+        out.hint = T(L"双击行可查看详情；勾选后点「卸载选中」卸载");
         out.canClean = !items_.empty();
     }
 
@@ -834,7 +834,7 @@ public:
     void Apply(ModuleContext& ctx, ModuleResult& out) override {
         if (selection_.empty()) {
             out.summary = L"请先勾选要卸载的软件";
-            out.hint = L"在列表中勾选后点击「卸载选中」";
+            out.hint = T(L"在列表中勾选后点击「卸载选中」");
             return;
         }
         vector<SoftRef> targets;
@@ -852,9 +852,9 @@ public:
         out.summary = buf;
         if (!failed.empty()) {
             failed.pop_back();
-            out.hint = L"失败项：" + failed + L"（可重试，或以管理员身份运行）";
+            out.hint = T(L"失败项：") + failed + T(L"（可重试，或以管理员身份运行）");
         }
-        if (cancelled) out.hint = L"已被用户中止（Esc）";
+        if (cancelled) out.hint = T(L"已被用户中止（Esc）");
     }
 
     bool SupportsUndo() const override { return false; }
@@ -891,7 +891,7 @@ public:
         int code = RunWingetCapture(CmdUpgrade(), kWingetTimeoutMs, &o);
         if (code != 0) {
             out.summary = L"检查升级失败（winget 退出码 " + std::to_wstring(code) + L"）";
-            out.hint = L"请确认 winget 正常：命令行执行 winget upgrade 查看";
+            out.hint = T(L"请确认 winget 正常：命令行执行 winget upgrade 查看");
             out.canClean = false;
             ctx.Log(L"✗ winget upgrade 失败（退出码 " + std::to_wstring(code) + L"）");
             return;
@@ -909,12 +909,12 @@ public:
         }
         if (out.rows.empty()) {
             out.summary = L"已全部是最新版本，没有可升级的软件";
-            out.hint = L"winget upgrade 未发现可更新项";
+            out.hint = T(L"winget upgrade 未发现可更新项");
             out.canClean = false;
             return;
         }
         out.summary = std::to_wstring(out.rows.size()) + L" 个软件可升级";
-        out.hint = L"勾选后点「升级选中」；不勾选 = 升级全部";
+        out.hint = T(L"勾选后点「升级选中」；不勾选 = 升级全部");
         out.canClean = true;
     }
 
@@ -943,9 +943,9 @@ public:
         out.summary = buf;
         if (!failed.empty()) {
             failed.pop_back();
-            out.hint = L"失败项：" + failed + L"（可重试，或以管理员身份运行）";
+            out.hint = T(L"失败项：") + failed + T(L"（可重试，或以管理员身份运行）");
         }
-        if (cancelled) out.hint = L"已被用户中止（Esc）";
+        if (cancelled) out.hint = T(L"已被用户中止（Esc）");
     }
 
     bool SupportsUndo() const override { return false; }

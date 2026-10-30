@@ -2,6 +2,7 @@
 //  清理结果模型 + 智能删除引擎 —— 实现（见 cleanresult.h 头注释）
 // ============================================================================
 #include "cleanresult.h"
+#include "lang.h"
 
 #include <algorithm>
 
@@ -101,31 +102,31 @@ unsigned long long CleanDirInner(const wstring& dir, const CancelFn& cancel,
 
 wstring ErrorTextZh(DWORD code) {
     switch (code) {
-    case 0:      return L"成功";
-    case 2:      return L"文件不存在";
-    case 3:      return L"路径不存在";
-    case 5:      return L"需要管理员权限";
-    case 32:     return L"被其他程序占用";
-    case 33:     return L"被其他程序锁定";
-    case 80:     return L"文件已存在";
-    case 87:     return L"参数无效";
-    case 110:    return L"文件已存在";
-    case 206:    return L"路径过长";
-    case 267:    return L"目标不是目录";
-    case 1392:   return L"文件或目录已损坏";
-    case 1223:   return L"操作被用户取消";
+    case 0:      return T(L"成功");
+    case 2:      return T(L"文件不存在");
+    case 3:      return T(L"路径不存在");
+    case 5:      return T(L"需要管理员权限");
+    case 32:     return T(L"被其他程序占用");
+    case 33:     return T(L"被其他程序锁定");
+    case 80:     return T(L"文件已存在");
+    case 87:     return T(L"参数无效");
+    case 110:    return T(L"文件已存在");
+    case 206:    return T(L"路径过长");
+    case 267:    return T(L"目标不是目录");
+    case 1392:   return T(L"文件或目录已损坏");
+    case 1223:   return T(L"操作被用户取消");
     // ---- 服务控制常见错误码（T03 服务管理共用）----
-    case 1051:   return L"必须先停止依赖此服务的其他服务";
-    case 1053:   return L"服务未及时响应启动或控制请求";
-    case 1056:   return L"服务已在运行";
-    case 1058:   return L"服务已被禁用";
-    case 1060:   return L"指定的服务不存在";
-    case 1061:   return L"服务此时不接受该控制操作";
-    case 1062:   return L"服务尚未启动";
-    case 1072:   return L"服务已标记为待删除";
-    case 0x80070005: return L"需要管理员权限";
-    case 0x80070020: return L"被其他程序占用";
-    default:     return L"错误码 " + std::to_wstring(code);
+    case 1051:   return T(L"必须先停止依赖此服务的其他服务");
+    case 1053:   return T(L"服务未及时响应启动或控制请求");
+    case 1056:   return T(L"服务已在运行");
+    case 1058:   return T(L"服务已被禁用");
+    case 1060:   return T(L"指定的服务不存在");
+    case 1061:   return T(L"服务此时不接受该控制操作");
+    case 1062:   return T(L"服务尚未启动");
+    case 1072:   return T(L"服务已标记为待删除");
+    case 0x80070005: return T(L"需要管理员权限");
+    case 0x80070020: return T(L"被其他程序占用");
+    default:     return T(L"错误码 ") + std::to_wstring(code);
     }
 }
 

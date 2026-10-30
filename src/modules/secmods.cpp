@@ -512,7 +512,7 @@ public:
         swprintf_s(b, 160, L"体检完成：%d 项正常 / %d 项警告 / %d 项无法检测", ok, warn, unknown);
         out.summary = b;
         if (warn > 0)
-            out.hint = L"警告项见「建议」列；对应修复动作在「系统修复」模块（需管理员）。";
+            out.hint = T(L"警告项见「建议」列；对应修复动作在「系统修复」模块（需管理员）。");
         out.canClean = false;
         ctx.Report(100, L"体检完成");
     }
@@ -568,7 +568,7 @@ public:
         auto acts = Actions();
         out.summary = L"请选择修复动作（共 " + U32((unsigned)acts.size()) +
                       L" 个）：主按钮 sfc / DISM，其余在「更多 ▾」菜单";
-        out.hint = L"所有命令原文与逐行输出会写入日志通道；执行中可随时停止（Esc/停止按钮）。";
+        out.hint = T(L"所有命令原文与逐行输出会写入日志通道；执行中可随时停止（Esc/停止按钮）。");
         out.canClean = true;
     }
 
@@ -581,7 +581,7 @@ public:
         if (!IsElevated() && !ReadOnlyAction(actionIndex)) {
             out.summary = L"需要管理员权限：「" + wstring(acts[actionIndex].label) +
                           L"」未执行";
-            out.hint = L"请以管理员身份运行本程序（启动时会自动请求提权）。";
+            out.hint = T(L"请以管理员身份运行本程序（启动时会自动请求提权）。");
             ctx.Log(L"  拒绝: 当前非管理员，动作「" + wstring(acts[actionIndex].label) +
                     L"」需要管理员权限");
             out.canClean = true;

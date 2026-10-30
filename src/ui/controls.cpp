@@ -605,8 +605,8 @@ void PaintLogView(LogViewData* d, HWND hwnd) {
                 //   「提示」 → GoldText（信号小字）   ▸ → Text2（动作行）
                 COLORREF c = design::color::Text;
                 if (s[0] == L'\u2713') c = design::color::ChIn;
-                else if (s[0] == L'\u2717' || std::wcsstr(s, L"错误")) c = design::color::ChErr;
-                else if (std::wcsstr(s, L"提示")) c = design::color::GoldText;
+                else if (s[0] == L'\u2717' || std::wcsstr(s, L"错误") || std::wcsstr(s, T(L"错误"))) c = design::color::ChErr;
+                else if (std::wcsstr(s, L"提示") || std::wcsstr(s, T(L"提示"))) c = design::color::GoldText;
                 else if (s[0] == L'\u25B8') c = design::color::Text2;
                 ui::DrawText(mem, s,
                              RECT{ dpi::S(14), y, rc.right - dpi::S(14), y + d->lineH },

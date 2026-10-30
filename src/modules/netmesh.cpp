@@ -404,8 +404,8 @@ public:
             r.danger = true;
             out.rows.push_back(std::move(r));
             out.summary = L"未检测到 Tailscale 客户端";
-            out.hint = L"「更多 ▾ → 导入配置字符串」回填服务器与密钥后即可「加入网络」；"
-                       L"加入时若未安装会自动引导 winget 静默安装。";
+            out.hint = wstring(T(L"「更多 ▾ → 导入配置字符串」回填服务器与密钥后即可「加入网络」；"))
+                       + T(L"加入时若未安装会自动引导 winget 静默安装。");
             out.canClean = true;
             ctx.Report(100, L"Tailscale 未安装");
             return;
@@ -424,7 +424,7 @@ public:
             r.danger = true;
             out.rows.push_back(std::move(r));
             out.summary = L"Tailscale 状态查询失败（服务未运行？）";
-            out.hint = L"客户端已安装：" + exe;
+            out.hint = T(L"客户端已安装：") + exe;
             out.canClean = true;
             ctx.Report(100, L"status 查询失败");
             return;
@@ -496,8 +496,8 @@ public:
         swprintf_s(b, 160, L"本机 %s（%s）· 对端 %d 台（%d 在线）· 客户端 v%s",
                    host.c_str(), backend.c_str(), peerCnt, peerOnline, clientVer.c_str());
         out.summary = b;
-        out.hint = L"「加入网络」按上方字段接入；「导入配置字符串」可一键回填；"
-                   L"「生成接入二维码」供手机 Tailscale 客户端扫码核对。";
+        out.hint = wstring(T(L"「加入网络」按上方字段接入；「导入配置字符串」可一键回填；"))
+                   + T(L"「生成接入二维码」供手机 Tailscale 客户端扫码核对。");
         out.canClean = true;
         ctx.Report(100, L"状态查询完成");
     }

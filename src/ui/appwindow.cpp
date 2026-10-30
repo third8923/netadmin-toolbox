@@ -362,7 +362,7 @@ LRESULT CALLBACK HeaderSubclassProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
             FillSolid(mem, rc, color::Hover);
             RECT bl = { rc.left, rc.bottom - 1, rc.right, rc.bottom };
             FillSolid(mem, bl, color::Hairline);
-            static const wchar_t* kLabels[] = { L"名称", L"数值", L"分类", L"详情" };
+            static const wchar_t* kLabels[] = { T(L"名称"), T(L"数值"), T(L"分类"), T(L"详情") };
             for (int i = 0; i < 4; ++i) {
                 RECT ir;
                 Header_GetItemRect(hwnd, i, &ir);
@@ -474,7 +474,7 @@ void AppWindow::Create(HINSTANCE hInst) {
     int y = wa.top + (availH - h) / 2;
 
     CreateWindowExW(0, wc.lpszClassName,
-                    wstring(d::brand::kAppNameCn).append(L" · ").append(d::brand::kAppNameEn)
+                    Tx(d::brand::kAppNameCn).append(L" · ").append(d::brand::kAppNameEn)
                         .append(L"  —  ").append(d::brand::kPublisher).c_str(),
                     WS_OVERLAPPEDWINDOW, x, y, w, h,
                     nullptr, nullptr, hInst, this);
@@ -521,17 +521,17 @@ void AppWindow::OnCreate() {
         ui::InstallButtonHover(b);
         return b;
     };
-    btnRun_ = mkBtn(L"开始扫描", ID_BTN_RUN);
-    btnClean_ = mkBtn(L"执行清理", ID_BTN_CLEAN);
-    btnUndo_ = mkBtn(L"还原选中", ID_BTN_UNDO);
-    btnStop_ = mkBtn(L"停止", ID_BTN_STOP);
-    btnAll_ = mkBtn(L"全选", ID_BTN_ALL);
-    btnNone_ = mkBtn(L"取消全选", ID_BTN_NONE);
-    btnMore_ = mkBtn(L"更多 ▾", ID_BTN_MORE);
-    btnAdmin_ = mkBtn(L"以管理员重启", ID_BTN_ADMIN);
-    btnAbout_ = mkBtn(L"关于", ID_BTN_ABOUT);
-    btnTheme_ = mkBtn(L"主题", ID_BTN_THEME);
-    btnLang_ = mkBtn(L"语言", ID_BTN_LANG);
+    btnRun_ = mkBtn(T(L"开始扫描"), ID_BTN_RUN);
+    btnClean_ = mkBtn(T(L"执行清理"), ID_BTN_CLEAN);
+    btnUndo_ = mkBtn(T(L"还原选中"), ID_BTN_UNDO);
+    btnStop_ = mkBtn(T(L"停止"), ID_BTN_STOP);
+    btnAll_ = mkBtn(T(L"全选"), ID_BTN_ALL);
+    btnNone_ = mkBtn(T(L"取消全选"), ID_BTN_NONE);
+    btnMore_ = mkBtn(T(L"更多 ▾"), ID_BTN_MORE);
+    btnAdmin_ = mkBtn(T(L"以管理员重启"), ID_BTN_ADMIN);
+    btnAbout_ = mkBtn(T(L"关于"), ID_BTN_ABOUT);
+    btnTheme_ = mkBtn(T(L"主题"), ID_BTN_THEME);
+    btnLang_ = mkBtn(T(L"语言"), ID_BTN_LANG);
 
     // 扩展字段输入行（v2.12 R3）：按模块 Fields() 动态显隐，密码位在
     // ApplyModuleToUi 里按字段声明切换（EM_SETPASSWORDCHAR）
@@ -552,8 +552,8 @@ void AppWindow::OnCreate() {
 
     // 侧栏「全部展开 / 全部收起」（v2.10）：owner-draw 小按钮，
     // 必须带 WS_VISIBLE（WM_CREATE 期间创建的子窗口漏它永不显示）
-    btnNavExpand_ = mkBtn(L"全部展开", ID_NAV_EXPAND);
-    btnNavCollapse_ = mkBtn(L"全部收起", ID_NAV_COLLAPSE);
+    btnNavExpand_ = mkBtn(T(L"全部展开"), ID_NAV_EXPAND);
+    btnNavCollapse_ = mkBtn(T(L"全部收起"), ID_NAV_COLLAPSE);
 
     ApplyFontsToChildren();
     SetWindowSubclass(nav_, NavHoverProc, 1, reinterpret_cast<DWORD_PTR>(this));
@@ -565,15 +565,15 @@ void AppWindow::OnCreate() {
     SetupColumns();
     ApplyModuleToUi();
 
-    LogLine(L"网管工具箱 NetAdmin Toolbox v" + std::to_wstring(k_AppVersionMajor) + L"." +
-            std::to_wstring(k_AppVersionMinor) + L"  ·  biohacker.fun 旗舰产品");
+    LogLine(T(L"网管工具箱 NetAdmin Toolbox v") + std::to_wstring(k_AppVersionMajor) + L"." +
+            std::to_wstring(k_AppVersionMinor) + T(L"  ·  biohacker.fun 旗舰产品"));
     LogLine(Tx(L"已加载 ") + std::to_wstring(ModuleRegistry::Instance().All().size()) +
             Tx(L" 个功能模块，GUI/CLI 均由注册表自动生成。"));
     if (IsElevated()) LogLine(Tx(L"✓ 管理员模式：全部功能可用。"));
     else LogLine(Tx(L"提示：当前为标准用户模式，部分网络/系统功能可能读取不全。"));
     LogLine(Tx(L"提示：Ctrl+F 搜索功能，F5 重新扫描，Esc 停止，Ctrl+T 切换主题。"));
-    LogLine(Tx(L"当前主题：") + wstring(d::CurrentTheme()->name) + Tx(L"（") +
-            d::CurrentTheme()->desc + Tx(L"）"));
+    LogLine(Tx(L"当前主题：") + Tx(d::CurrentTheme()->name) + Tx(L"（") +
+            Tx(d::CurrentTheme()->desc) + Tx(L"）"));
 }
 
 void AppWindow::OnDestroy() {
@@ -658,7 +658,7 @@ void AppWindow::ChangeScale(int dir) {
     const double after = dpi::UserScale();
 
     if (after == before && dir != 0) {
-        ui::ShowToast(hwnd_, L"已到缩放上下限（85% ~ 180%）",
+        ui::ShowToast(hwnd_, T(L"已到缩放上下限（85% ~ 180%）"),
                       color::GoldText, 0xE7BA /* Warning */);
         return;
     }
@@ -695,7 +695,7 @@ void AppWindow::ChangeScale(int dir) {
     UpdateWindow(hwnd_);
 
     wchar_t msg[80];
-    wsprintfW(msg, L"界面缩放 %d%%", (int)(after * 100.0 + 0.5));
+    wsprintfW(msg, T(L"界面缩放 %d%%"), (int)(after * 100.0 + 0.5));
     ui::ShowToast(hwnd_, msg, color::Accent, 0xE8A3 /* Zoom */);
 }
 
@@ -985,11 +985,11 @@ void AppWindow::ApplyModuleToUi() {
     ShowWindow(targetEdit_, hasTarget ? SW_SHOW : SW_HIDE);
     if (hasTarget) {
         const wchar_t* hint = m->TargetHint();
-        ui::SetFieldPlaceholder(targetEdit_, T(hint ? hint : L"目标 / 参数"));
+        ui::SetFieldPlaceholder(targetEdit_, T(hint ? hint : T(L"目标 / 参数")));
     }
     if (hasPath) {
         const wchar_t* hint = m->PathHint();
-        ui::SetFieldPlaceholder(pathEdit_, T(hint ? hint : L"路径（留空 = 默认）"));
+        ui::SetFieldPlaceholder(pathEdit_, T(hint ? hint : T(L"路径（留空 = 默认）")));
     }
 
     // ---- 扩展字段（v2.12 R3）：按 Fields() 显隐/占位/密码位 ----
@@ -1053,7 +1053,7 @@ void AppWindow::ApplyModuleToUi() {
         if (const wchar_t* cleanText = m->ApplyLabel())
             SetWindowTextW(btnClean_, T(cleanText));
         else
-            SetWindowTextW(btnClean_, T(tweak ? L"应用选中" : L"执行清理"));
+            SetWindowTextW(btnClean_, T(tweak ? T(L"应用选中") : T(L"执行清理")));
         ShowWindow(btnUndo_, (tweak && m->SupportsUndo()) ? SW_SHOW : SW_HIDE);
         // 还原按钮文案：模块可自定义（如「卸载选中」），为空回落默认
         if (const wchar_t* undoText = m->UndoLabel())
@@ -1096,10 +1096,10 @@ void AppWindow::ApplyModuleToUi() {
 void AppWindow::SetupColumns() {
     while (ListView_DeleteColumn(list_, 0)) {}
     struct { const wchar_t* t; int w; int fmt; } cols[] = {
-        { L"名称", 280, LVCFMT_LEFT },
-        { L"数值", 130, LVCFMT_RIGHT },
-        { L"分类", 140, LVCFMT_LEFT },
-        { L"详情", 420, LVCFMT_LEFT },
+        { T(L"名称"), 280, LVCFMT_LEFT },
+        { T(L"数值"), 130, LVCFMT_RIGHT },
+        { T(L"分类"), 140, LVCFMT_LEFT },
+        { T(L"详情"), 420, LVCFMT_LEFT },
     };
     for (int i = 0; i < 4; ++i) {
         LVCOLUMNW c = {};
@@ -1210,15 +1210,15 @@ bool AppWindow::ConfirmApply(IModule* m, const vector<int>& selection,
     } else if (m->Kind() == ModuleKind::Tweaks) {
         int n = (int)selection.size();
         if (n == 0)
-            body = L"未选中任何优化项，将对「" + title + L"」的全部设置执行应用（写入注册表）。\n\n"
-                   L"建议先创建系统还原点。是否继续？";
+            body = T(L"未选中任何优化项，将对「") + title + wstring(T(L"」的全部设置执行应用（写入注册表）。\n\n"))
+                   + T(L"建议先创建系统还原点。是否继续？");
         else
-            body = L"将「" + title + L"」应用到选中的 " + std::to_wstring(n) +
-                   L" 项设置（写入注册表）。\n\n建议先创建系统还原点。是否继续？";
+            body = T(L"将「") + title + T(L"」应用到选中的 ") + std::to_wstring(n) +
+                   T(L" 项设置（写入注册表）。\n\n建议先创建系统还原点。是否继续？");
     } else {
-        body = L"将执行「" + title + L"」的清理操作，扫描到的文件可能被永久删除且不可恢复。\n\n" +
-               (result_.summary.empty() ? wstring(L"请确认已看清扫描列表。") : result_.summary) +
-               L"\n\n建议先创建系统还原点。是否继续？";
+        body = T(L"将执行「") + title + T(L"」的清理操作，扫描到的文件可能被永久删除且不可恢复。\n\n") +
+               (result_.summary.empty() ? wstring(T(L"请确认已看清扫描列表。")) : result_.summary) +
+               T(L"\n\n建议先创建系统还原点。是否继续？");
     }
     return mz::ui::ConfirmDialog(hwnd_, danger ? T(L"确认执行清理") : T(L"确认执行"), body,
                                  T(L"确认执行"), T(L"取消"), danger);
@@ -1263,8 +1263,8 @@ void AppWindow::StartWork(bool apply, bool undo, int actionIndex) {
     ui::DismissToast();
     InvalidateRect(hwnd_, nullptr, FALSE);
 
-    wstring what = (actionIndex >= 0) ? L"动作："
-                                      : (undo ? L"还原：" : (apply ? L"执行：" : L"扫描："));
+    wstring what = (actionIndex >= 0) ? T(L"动作：")
+                                      : (undo ? T(L"还原：") : (apply ? T(L"执行：") : T(L"扫描：")));
     PushLog(L"");
     PushLog(L"▸ " + what + Tx(m->Title() ? m->Title() : L""));
     FlushLog();
@@ -1795,7 +1795,7 @@ void AppWindow::DrawSidebar(HDC dc, const RECT& rc) {
                              *d::CurrentTheme());
     }
 
-    ui::DrawText(dc, d::brand::kAppNameCn,
+    ui::DrawText(dc, T(d::brand::kAppNameCn),
                  RECT{ PADX + dpi::S(62), dpi::S(15), SB - dpi::S(10), dpi::S(39) },
                  DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
                  color::Text, ui::res::Title);
@@ -2055,12 +2055,13 @@ LRESULT AppWindow::ListCustomDraw(LPARAM lp) {
             // 语义时切错误态线稿（信号在中途断了）
             const wstring failBlob = result_.hint + L" " + result_.summary;
             const bool failed =
-                failBlob.find(L"错误") != wstring::npos ||
-                failBlob.find(L"失败") != wstring::npos ||
-                failBlob.find(L"无法") != wstring::npos ||
-                failBlob.find(L"超时") != wstring::npos ||
-                failBlob.find(L"未找到") != wstring::npos ||
-                failBlob.find(L"不可用") != wstring::npos;
+                // 双语检测：模块 hint 已 T() 化（en 为英文），summary 仍是中文原文
+                failBlob.find(L"错误") != wstring::npos || failBlob.find(T(L"错误")) != wstring::npos ||
+                failBlob.find(L"失败") != wstring::npos || failBlob.find(T(L"失败")) != wstring::npos ||
+                failBlob.find(L"无法") != wstring::npos || failBlob.find(T(L"无法")) != wstring::npos ||
+                failBlob.find(L"超时") != wstring::npos || failBlob.find(T(L"超时")) != wstring::npos ||
+                failBlob.find(L"未找到") != wstring::npos || failBlob.find(T(L"未找到")) != wstring::npos ||
+                failBlob.find(L"不可用") != wstring::npos || failBlob.find(T(L"不可用")) != wstring::npos;
             if (failed)
                 brand::DrawErrorState(cd->nmcd.hdc, rc, *d::CurrentTheme());
             else
@@ -2118,8 +2119,9 @@ LRESULT AppWindow::ListCustomDraw(LPARAM lp) {
             // 开关型模块：状态列用通道色区分，扫一眼就知道哪些已开启
             // （Tweaks「已应用」= ChIn、「未应用」= Text3）
             if (tweaks && c == 1 && !danger) {
-                fg = (wcscmp(buf, L"已应用") == 0) ? color::ChIn
-                   : (wcscmp(buf, L"未应用") == 0) ? color::Text3
+                // Tweaks 状态列文本来自模块行（中文原文），双语比较兼容后续英文化
+                fg = (wcscmp(buf, L"已应用") == 0 || wcscmp(buf, T(L"已应用")) == 0) ? color::ChIn
+                   : (wcscmp(buf, L"未应用") == 0 || wcscmp(buf, T(L"未应用")) == 0) ? color::Text3
                                                    : fg;
             }
             // 数值列 = Data 层等宽（JetBrains Mono 回落链），IP/端口天然对齐
@@ -2146,7 +2148,7 @@ LRESULT AppWindow::HeaderCustomDraw(LPARAM lp) {
         RECT line = { rc.left, rc.bottom - 1, rc.right, rc.bottom };
         FillSolid(cd->hdc, line, color::Hairline);
 
-        const wchar_t* labels[] = { L"名称", L"数值", L"分类", L"详情" };
+        const wchar_t* labels[] = { T(L"名称"), T(L"数值"), T(L"分类"), T(L"详情") };
         bool sorted = (sortCol_ == col);
         RECT tr = { rc.left + dpi::S(14), rc.top,
                     rc.right - (sorted ? dpi::S(34) : dpi::S(14)), rc.bottom };
@@ -2227,17 +2229,17 @@ LRESULT AppWindow::OnCommand(WORD id, WORD code) {
         ListView_SetItemState(list_, -1, 0, LVIS_SELECTED);
         break;
     case ID_BTN_ADMIN:
-        if (MessageBoxW(hwnd_, L"需要以管理员身份重新启动本程序。是否继续？", L"提权",
+        if (MessageBoxW(hwnd_, T(L"需要以管理员身份重新启动本程序。是否继续？"), T(L"提权"),
                         MB_YESNO | MB_ICONQUESTION) == IDYES) {
             mz::ElevateResult er = mz::RelaunchAsAdmin();
             if (er == mz::ElevateResult::Ok) {
                 DestroyWindow(hwnd_);
             } else if (er == mz::ElevateResult::Cancelled) {
                 // UAC 被取消：不再静默，Toast 明确告知当前仍为标准用户
-                ui::ShowToast(hwnd_, L"已取消提权，继续以标准用户权限运行",
+                ui::ShowToast(hwnd_, T(L"已取消提权，继续以标准用户权限运行"),
                               color::GoldText, 0xE7EF /* Admin shield */);
             } else {
-                ui::ShowToast(hwnd_, L"提权失败，请右键「以管理员身份运行」",
+                ui::ShowToast(hwnd_, T(L"提权失败，请右键「以管理员身份运行」"),
                               color::ChErr, 0xE783 /* Error */);
             }
         }
@@ -2313,7 +2315,7 @@ LRESULT AppWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             int ai = (int)mi->itemData - kActMenuIdBase;
             const wstring& s = (ai >= 2 && ai - 2 < (int)menuItems_.size())
                                    ? menuItems_[ai - 2].label
-                                   : wstring(L"动作");
+                                   : wstring(T(L"动作"));
             SIZE sz = { 0, 0 };
             HDC dc = GetDC(hwnd_);
             HFONT old = (HFONT)SelectObject(dc, ui::res::Body);

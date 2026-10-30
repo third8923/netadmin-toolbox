@@ -146,7 +146,7 @@ static void BuildCleanResult(ModuleResult& out, const CleanReport& report,
         out.rows.push_back(r);
     }
     if (report.fileFail > 0) {
-        out.hint = L"失败原因分布：" + report.FailSummary();
+        out.hint = T(L"失败原因分布：") + report.FailSummary();
         if (!IsElevated())
             out.hint += L"（部分文件需要管理员权限，请以管理员身份运行后重试）";
     }
@@ -430,7 +430,7 @@ public:
             r.danger = true;
             out.rows.push_back(r);
         }
-        if (report.fileFail > 0) out.hint = L"失败原因分布：" + report.FailSummary();
+        if (report.fileFail > 0) out.hint = T(L"失败原因分布：") + report.FailSummary();
         out.canClean = false;
         lastItems_.clear();
     }
@@ -564,7 +564,7 @@ public:
             out.rows.push_back(r);
         }
         out.summary = L"可搬家软件 " + std::to_wstring(o.items.size()) + L" 个";
-        out.hint = L"迁移使用 Junction，原路径保持可用；大型软件（SQL Server/Office）请勿搬";
+        out.hint = T(L"迁移使用 Junction，原路径保持可用；大型软件（SQL Server/Office）请勿搬");
     }
 };
 
@@ -621,7 +621,7 @@ public:
             }
         }
         out.summary = L"共 " + std::to_wstring(feats_.size()) + L" 项优化";
-        out.hint = L"选中要调整的项目后点「应用」；已应用项选中后点「还原」";
+        out.hint = T(L"选中要调整的项目后点「应用」；已应用项选中后点「还原」");
         out.canClean = true;
     }
 
@@ -649,7 +649,7 @@ public:
         swprintf_s(buf, L"%s完成：成功 %d，失败 %d", undo ? L"还原" : L"应用", r.ok, r.failed);
         out.summary = buf;
         if (feats.empty()) out.summary = L"未选中任何优化项";
-        if (r.needExplorer) out.hint = L"部分设置需重启资源管理器才能生效";
+        if (r.needExplorer) out.hint = T(L"部分设置需重启资源管理器才能生效");
 
         // 明确列出失败项，让用户知道哪些没成功、为何失败
         if (r.failed > 0) {

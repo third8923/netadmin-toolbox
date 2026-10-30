@@ -520,7 +520,7 @@ public:
         summary += L" · 已开机 " + FmtDuration(upMs);
         out.summary = summary;
         if (!IsElevated()) {
-            out.hint = L"提示：当前为标准用户权限，部分受保护信息可能无法读取（以管理员身份运行可获取更完整信息）。";
+            out.hint = T(L"提示：当前为标准用户权限，部分受保护信息可能无法读取（以管理员身份运行可获取更完整信息）。");
         }
         ctx.Report(100, L"系统信息采集完成");
     }
@@ -631,7 +631,7 @@ public:
         if (ctx.Cancelled()) summary += L"（已中止）";
         out.summary = summary;
         if (dangerCount > 0) {
-            out.hint = L"警告：" + dangerLetters + L" 使用率超过 90%，建议清理空间。";
+            out.hint = T(L"警告：") + dangerLetters + T(L" 使用率超过 90%，建议清理空间。");
         }
         ctx.Report(100, L"磁盘信息查询完成");
     }
@@ -763,7 +763,7 @@ public:
         if (noMem > 0) summary += L"（" + NumU32((unsigned)noMem) + L" 个进程因权限无法读取内存）";
         if (protectedCount > 0) summary += L" · 系统关键进程 " + NumU32((unsigned)protectedCount) + L" 个（红标，禁止结束）";
         out.summary = summary;
-        if (!IsElevated()) out.hint = L"提示：标准用户权限下部分系统进程无法读取内存/路径。";
+        if (!IsElevated()) out.hint = T(L"提示：标准用户权限下部分系统进程无法读取内存/路径。");
         out.canClean = true;
         ctx.Report(100, L"进程枚举完成");
     }
@@ -843,7 +843,7 @@ public:
         swprintf_s(b, L"结束进程完成：成功 %d，拒绝 %d，失败 %d", ok, refused, fail);
         out.summary = b;
         if (fail > 0 && !IsElevated())
-            out.hint = L"部分进程结束失败，可能需要管理员权限（请提权后重试）。";
+            out.hint = T(L"部分进程结束失败，可能需要管理员权限（请提权后重试）。");
         out.canClean = true;
     }
 
@@ -933,7 +933,7 @@ public:
                           NumU32((unsigned)regCount) + L" · 启动文件夹 " + NumU32((unsigned)folderCount) + L"）";
         if (ctx.Cancelled()) summary += L"（已中止）";
         out.summary = summary;
-        out.hint = L"提示：RunOnce 项在用户登录后执行一次即被删除；启动文件夹中的 .lnk 按文件名展示。";
+        out.hint = T(L"提示：RunOnce 项在用户登录后执行一次即被删除；启动文件夹中的 .lnk 按文件名展示。");
         ctx.Report(100, L"启动项读取完成");
     }
 };
@@ -1134,7 +1134,7 @@ public:
         summary += L" · 自动 " + NumU32((unsigned)autoStart) + L" · 禁用 " + NumU32((unsigned)disabled);
         if (cfgUnknown) summary += L"（" + NumU32((unsigned)cfgUnknown) + L" 个无法读取启动类型）";
         out.summary = summary;
-        out.hint = L"说明：微软核心服务受 SCM 保护，拒绝操作属正常现象，失败原因会以中文展示。";
+        out.hint = T(L"说明：微软核心服务受 SCM 保护，拒绝操作属正常现象，失败原因会以中文展示。");
         out.canClean = true;
         ctx.Report(100, L"服务枚举完成");
     }
@@ -1217,7 +1217,7 @@ public:
         swprintf_s(b, L"%s完成：成功 %d，跳过 %d，失败 %d", kNames[actionIndex], ok, skip, fail);
         out.summary = b;
         if (fail > 0 && !IsElevated())
-            out.hint = L"部分操作失败，可能需要管理员权限（请提权后重试）。";
+            out.hint = T(L"部分操作失败，可能需要管理员权限（请提权后重试）。");
         out.canClean = true;
     }
 
@@ -1466,7 +1466,7 @@ public:
         LONG r = RegOpenKeyExW(HKEY_LOCAL_MACHINE, kPkgs, 0, KEY_READ, &hk);
         if (r != ERROR_SUCCESS) {
             out.summary = L"无法打开 CBS 包注册表：" + Win32Err(r);
-            out.hint = L"系统补丁级别：" + v.BuildText() + L"（" + v.NameText() + L"）";
+            out.hint = T(L"系统补丁级别：") + v.BuildText() + L"（" + v.NameText() + L"）";
             return;
         }
         ctx.Report(-1, L"正在枚举 CBS 组件包…");
@@ -1546,12 +1546,12 @@ public:
 
         if (cancelled) {
             out.summary = L"已中止：已扫描 " + NumU32(scanned) + L" 个 CBS 包";
-            out.hint = L"系统补丁级别：" + v.BuildText();
+            out.hint = T(L"系统补丁级别：") + v.BuildText();
             return;
         }
         if (hits.empty()) {
             out.summary = L"未从 " + NumU32(subKeys) + L" 个 CBS 包中解析到已安装更新（可能权限不足或系统使用其他更新机制）";
-            out.hint = L"系统补丁级别：" + v.BuildText() + L"（" + v.NameText() + L"）";
+            out.hint = T(L"系统补丁级别：") + v.BuildText() + L"（" + v.NameText() + L"）";
             return;
         }
 
@@ -1568,8 +1568,8 @@ public:
         out.summary = L"扫描 " + NumU32(subKeys) + L" 个 CBS 包，解析出 " +
                       NumU32((unsigned)hits.size()) + L" 个已安装更新（显示最近 " +
                       NumU32((unsigned)show) + L" 个）";
-        out.hint = L"系统补丁级别：" + v.BuildText() + L"（" + v.NameText() +
-                   L"） · 数据来源：Component Based Servicing\\Packages（只读）";
+        out.hint = T(L"系统补丁级别：") + v.BuildText() + L"（" + v.NameText() +
+                   T(L"） · 数据来源：Component Based Servicing\\Packages（只读）");
         ctx.Report(100, L"CBS 包扫描完成");
     }
 };
@@ -1634,7 +1634,7 @@ public:
                           NumU32((unsigned)sysVals.size()) + L" · 用户 " + NumU32((unsigned)userVals.size()) + L"）";
         if (ctx.Cancelled()) summary += L"（已中止）";
         out.summary = summary;
-        out.hint = L"说明：仅列出注册表中持久化的环境变量；REG_EXPAND_SZ 值同时显示展开后结果。";
+        out.hint = T(L"说明：仅列出注册表中持久化的环境变量；REG_EXPAND_SZ 值同时显示展开后结果。");
         ctx.Report(100, L"环境变量读取完成");
     }
 };
@@ -2014,7 +2014,7 @@ public:
         wstring text, err;
         if (!ReadHostsFull(path, &text, &err)) {
             out.summary = err;
-            out.hint = L"若被安全软件锁定或权限不足，请以管理员身份重试。";
+            out.hint = T(L"若被安全软件锁定或权限不足，请以管理员身份重试。");
             return;
         }
         ctx.Report(-1, L"正在读取 hosts 文件…");
@@ -2030,8 +2030,8 @@ public:
 
         DWORD attr = GetFileAttributesW(path.c_str());
         bool ro = (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_READONLY);
-        out.hint = L"文件：" + path + (ro ? L"（只读）" : wstring()) +
-                   L" · 「编辑 hosts」可全文修改，「更多 ▾」添加映射 / 屏蔽模板 / 还原。";
+        out.hint = T(L"文件：") + path + (ro ? T(L"（只读）") : wstring()) +
+                   T(L" · 「编辑 hosts」可全文修改，「更多 ▾」添加映射 / 屏蔽模板 / 还原。");
         ctx.Report(100, L"hosts 读取完成");
     }
 

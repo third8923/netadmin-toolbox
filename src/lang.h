@@ -35,4 +35,9 @@ const wchar_t* T(const wchar_t* zh);
 std::wstring Tx(const std::wstring& zh);
 
 } // namespace lang
+
+// v2.18 i18n：把翻译入口提升到 mz 命名空间，模块/引擎层可直接写 T(L"...") / Tx(L"...")
+using lang::T;
+using lang::Tx;
+
 } // namespace mz

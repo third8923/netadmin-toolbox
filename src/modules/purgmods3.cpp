@@ -503,8 +503,8 @@ public:
                    taskDisabled, taskCnt, hostsLocked ? L"开" : L"关");
         out.summary = b;
         out.hint = (polLocked || svcDisabled || taskDisabled)
-            ? L"检测到更新已被封锁；「还原更新锁定」可回滚（按 wulock-backup.tsv）。"
-            : L"更新未被封锁。点「锁定系统更新」执行封装镜像级封锁（先自动备份）。";
+            ? T(L"检测到更新已被封锁；「还原更新锁定」可回滚（按 wulock-backup.tsv）。")
+            : T(L"更新未被封锁。点「锁定系统更新」执行封装镜像级封锁（先自动备份）。");
         out.canClean = true;
         ctx.Report(100, L"更新状态扫描完成");
     }
@@ -620,8 +620,8 @@ public:
         swprintf_s(b, 160, L"锁定完成：成功 %d 项，失败 %d 项%s", ok, fail,
                    fail && !IsElevated() ? L"（非管理员运行：写系统区被拒绝，请提权后重试）" : L"");
         out.summary = b;
-        out.hint = fail ? L"存在失败项：全部失败原因已在日志中归因；提权后重试即可补齐。"
-                        : L"更新封锁已生效。可用「还原更新锁定」随时回滚。";
+        out.hint = fail ? T(L"存在失败项：全部失败原因已在日志中归因；提权后重试即可补齐。")
+                        : T(L"更新封锁已生效。可用「还原更新锁定」随时回滚。");
         out.canClean = true;
     }
 

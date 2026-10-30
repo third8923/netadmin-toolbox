@@ -239,10 +239,10 @@ public:
         out.summary = L"会话 " + U32s3((unsigned)sess_.size()) + L" 个 · OpenSSH " +
                       (sshOk ? wstring(L"可用") : wstring(L"缺失"));
         out.hint = sshOk
-            ? L"在上方填写会话信息后「更多 ▾ → 保存/更新会话」；勾选后「连接选中」。"
-              L"推荐配公钥免密：ssh-keygen + type 公钥 >> 服务器 ~/.ssh/authorized_keys。"
-            : L"未检测到 Windows 内置 OpenSSH（%WINDIR%\\System32\\OpenSSH）："
-              L"「更多 ▾ → 安装 OpenSSH 客户端」，或 设置 → 应用 → 可选功能 安装。";
+            ? wstring(T(L"在上方填写会话信息后「更多 ▾ → 保存/更新会话」；勾选后「连接选中」。"))
+              + T(L"推荐配公钥免密：ssh-keygen + type 公钥 >> 服务器 ~/.ssh/authorized_keys。")
+            : wstring(T(L"未检测到 Windows 内置 OpenSSH（%WINDIR%\\System32\\OpenSSH）："))
+              + T(L"「更多 ▾ → 安装 OpenSSH 客户端」，或 设置 → 应用 → 可选功能 安装。");
         out.canClean = true;
     }
 
@@ -553,9 +553,9 @@ public:
                       U32s3((unsigned)RunningCount()) + L" · OpenSSH " +
                       (sshOk ? wstring(L"可用") : wstring(L"缺失"));
         out.hint = sshOk
-            ? L"在上方填写参数后「更多 ▾ → 保存为隧道」，再勾选「启动选中隧道」。"
-              L"隧道在本程序运行期间持有句柄；退出程序前请先停止隧道。"
-            : L"未检测到 Windows 内置 OpenSSH：请先在「远程会话」模块安装。";
+            ? wstring(T(L"在上方填写参数后「更多 ▾ → 保存为隧道」，再勾选「启动选中隧道」。"))
+              + T(L"隧道在本程序运行期间持有句柄；退出程序前请先停止隧道。")
+            : T(L"未检测到 Windows 内置 OpenSSH：请先在「远程会话」模块安装。");
         out.canClean = true;
     }
 
@@ -844,8 +844,8 @@ public:
         out.summary = ports.empty()
             ? wstring(L"未发现串口（无 COM 设备或驱动未装）")
             : L"发现串口 " + U32s3((unsigned)ports.size()) + L" 个";
-        out.hint = L"在上方填写 COM 口与波特率后：「打开串口监视」实时查看接收；"
-                   L"目标框填发送内容 →「发送并读取响应」。";
+        out.hint = wstring(T(L"在上方填写 COM 口与波特率后：「打开串口监视」实时查看接收；"))
+                   + T(L"目标框填发送内容 →「发送并读取响应」。");
         out.canClean = true;
     }
 

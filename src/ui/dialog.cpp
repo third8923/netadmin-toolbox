@@ -87,7 +87,7 @@ LRESULT CALLBACK ModalWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         };
         st->btnOk = mkBtn(st->opt.okText.c_str(), kModalOk, dpi::S(124));
         st->btnCancel = mkBtn(st->opt.cancelText.c_str(), kModalCancel, dpi::S(124));
-        st->btnExtra = mkBtn(L"访问 biohacker.fun", kModalExtra, dpi::S(180));
+        st->btnExtra = mkBtn(T(L"访问 biohacker.fun"), kModalExtra, dpi::S(180));
         st->btnClose = mkBtn(L"\xE894", kModalClose, dpi::S(40));
         SetWindowLongW(st->btnClose, GWL_STYLE,
                        GetWindowLongW(st->btnClose, GWL_STYLE) & ~WS_TABSTOP);
@@ -385,7 +385,7 @@ public:
                            y + dpi::S(48) },
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
                      color::Text2, ui::res::Body);
-        ui::DrawText(dc, d::brand::kPublisherCn,
+        ui::DrawText(dc, Tx(d::brand::kPublisherCn).c_str(),
                      RECT{ rc.left + dpi::S(110), y + dpi::S(48), rc.right,
                            y + dpi::S(66) },
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
@@ -402,7 +402,7 @@ public:
         ui::FillSolid(dc, RECT{ rc.left, y, rc.right, y + 1 }, color::Hairline);
 
         y += dpi::S(14);
-        ui::DrawText(dc, d::brand::kTaglineCn,
+        ui::DrawText(dc, Tx(d::brand::kTaglineCn).c_str(),
                      RECT{ rc.left, y, rc.right, y + dpi::S(22) },
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
                      color::Text2, ui::res::Small);

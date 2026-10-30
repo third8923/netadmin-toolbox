@@ -382,9 +382,9 @@ public:
                    findings_.size(), signHit, folderHit, other, advisory);
         out.summary = b;
         out.hint = findings_.empty()
-            ? L"未发现命中特征库的项。特征库来源见「更多 ▾ → 特征库信息」。"
-            : L"勾选后点「处置选中项」；处置前自动备份，可用「还原上次处置」一键还原。"
-              L"微软签名文件已自动放行。";
+            ? T(L"未发现命中特征库的项。特征库来源见「更多 ▾ → 特征库信息」。")
+            : wstring(T(L"勾选后点「处置选中项」；处置前自动备份，可用「还原上次处置」一键还原。"))
+              + T(L"微软签名文件已自动放行。");
         out.canClean = true;
     }
 

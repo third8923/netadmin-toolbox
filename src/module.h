@@ -13,6 +13,7 @@
 #pragma once
 
 #include "common.h"
+#include "lang.h"   // v2.18 i18n：模块层 hint/label/warning 文案经 T() 翻译
 
 namespace mz {
 

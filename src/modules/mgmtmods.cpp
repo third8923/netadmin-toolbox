@@ -255,21 +255,21 @@ public:
         // ---- 第二步：创建（非提权一律拒绝）----
         if (!IsElevated()) {
             out.summary = L"创建还原点需要管理员权限，未执行";
-            out.hint = L"已尽力列出可见的系统还原点；请以管理员身份运行本程序后再创建。";
+            out.hint = T(L"已尽力列出可见的系统还原点；请以管理员身份运行本程序后再创建。");
             out.canClean = true;
             ctx.Log(L"  拒绝: 当前非管理员，创建还原点需要管理员权限");
             return;
         }
         if (pre.srDisabled) {
             out.summary = L"系统还原已被禁用，无法创建还原点";
-            out.hint = L"启用方法：系统属性 → 系统保护 → 对 C 盘「配置」→「启用系统保护」。";
+            out.hint = T(L"启用方法：系统属性 → 系统保护 → 对 C 盘「配置」→「启用系统保护」。");
             out.canClean = true;
             ctx.Log(L"  归因: 系统还原服务被禁用（" + pre.err + L"）");
             return;
         }
         if (!pre.ok) {
             out.summary = L"创建前探测失败，为安全起见未执行";
-            out.hint = L"请确认 System Restore 服务（VSS）正在运行后重试。";
+            out.hint = T(L"请确认 System Restore 服务（VSS）正在运行后重试。");
             out.canClean = true;
             return;
         }
@@ -324,13 +324,13 @@ public:
             }
             if (within24h) {
                 out.summary = L"未创建新还原点：24 小时内已存在还原点（" + pre.latest + L"）";
-                out.hint = L"Windows 默认限制 24 小时内只允许创建一个还原点；"
-                           L"可设注册表 HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\SystemRestore "
-                           L"下 SystemRestorePointCreationFrequency = 0 (DWORD) 解除限制。";
+                out.hint = wstring(T(L"Windows 默认限制 24 小时内只允许创建一个还原点；"))
+                           + wstring(T(L"可设注册表 HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\SystemRestore "))
+                           + T(L"下 SystemRestorePointCreationFrequency = 0 (DWORD) 解除限制。");
                 ctx.Log(L"  归因: 24 小时频率限制（最近还原点 " + pre.latest + L"）");
             } else {
                 out.summary = L"创建命令已执行，但未检测到新还原点（详见上方日志）";
-                out.hint = L"请确认系统保护已对系统盘启用（系统属性 → 系统保护）。";
+                out.hint = T(L"请确认系统保护已对系统盘启用（系统属性 → 系统保护）。");
             }
             out.rows = post.ok ? post.rows : out.rows;
         }
@@ -387,8 +387,8 @@ public:
 
         out.summary = L"共 " + U32((unsigned)out.rows.size()) + L" 个本地账户"
                       L"（管理员排前 · 禁用账户红标）";
-        out.hint = L"启用/禁用通过 NetUserSetInfo 实现，保留账户其余属性；"
-                   L"Administrator/Guest/DefaultAccount 为内置账户，不允许操作。";
+        out.hint = wstring(T(L"启用/禁用通过 NetUserSetInfo 实现，保留账户其余属性；"))
+                   + T(L"Administrator/Guest/DefaultAccount 为内置账户，不允许操作。");
         out.canClean = true;
         ctx.Report(100, L"本地用户枚举完成");
     }
@@ -470,7 +470,7 @@ public:
                       L"成功 " + I64(ok) + L"，跳过 " + I64(skip) +
                       L"，失败 " + I64(fail);
         if (fail > 0 && !IsElevated())
-            out.hint = L"部分操作失败，可能需要管理员权限（请提权后重试）。";
+            out.hint = T(L"部分操作失败，可能需要管理员权限（请提权后重试）。");
         out.canClean = true;
     }
 
@@ -570,7 +570,7 @@ public:
             if (r.c3.rfind(L"管理", 0) == 0) ++mgmt;
         out.summary = L"共 " + U32((unsigned)out.rows.size()) + L" 个共享"
                       L"（其中管理共享 " + I64(mgmt) + L" 个，只读保护）";
-        out.hint = L"管理共享（IPC$、ADMIN$、X$）由系统维护，删除操作会被拒绝。";
+        out.hint = T(L"管理共享（IPC$、ADMIN$、X$）由系统维护，删除操作会被拒绝。");
         out.canClean = true;
         ctx.Report(100, L"共享枚举完成");
     }
@@ -632,7 +632,7 @@ public:
         out.summary = L"删除共享完成：成功 " + I64(ok) +
                       L"，跳过 " + I64(skip) + L"，失败 " + I64(fail);
         if (fail > 0 && !IsElevated())
-            out.hint = L"部分操作失败，可能需要管理员权限（请提权后重试）。";
+            out.hint = T(L"部分操作失败，可能需要管理员权限（请提权后重试）。");
         out.canClean = true;
     }
 
@@ -776,8 +776,8 @@ public:
         out.summary = L"近 7 天 System/Application 错误与严重事件 " +
                       I64(totalEvents) + L" 条，聚合为 " +
                       I64((long long)agg.size()) + L" 类（显示 Top 20）";
-        out.hint = L"聚合口径：按「来源 + 事件 ID」；Security 通道需审计权限，未包含。"
-                   L"事件详情可在事件查看器 (eventvwr) 中按来源与 ID 检索。";
+        out.hint = wstring(T(L"聚合口径：按「来源 + 事件 ID」；Security 通道需审计权限，未包含。"))
+                   + T(L"事件详情可在事件查看器 (eventvwr) 中按来源与 ID 检索。");
         out.canClean = false;
         ctx.Report(100, L"事件日志分析完成");
     }
@@ -938,7 +938,7 @@ public:
 
         out.summary = L"共 " + U32((unsigned)out.rows.size()) +
                       L" 个电源计划（当前使用的排前）";
-        out.hint = L"「卓越性能」为系统隐藏计划，启用即复制一份到本机并可在列表中切换。";
+        out.hint = T(L"「卓越性能」为系统隐藏计划，启用即复制一份到本机并可在列表中切换。");
         out.canClean = true;
         ctx.Report(100, L"电源计划枚举完成");
     }
@@ -997,7 +997,7 @@ public:
             } else {
                 out.summary = L"切换电源计划失败：" + ErrorTextZh(err);
                 if (!IsElevated())
-                    out.hint = L"部分系统策略要求管理员权限才能切换电源计划。";
+                    out.hint = T(L"部分系统策略要求管理员权限才能切换电源计划。");
             }
             out.canClean = true;
             return;
@@ -1030,7 +1030,7 @@ public:
             } else {
                 out.summary = L"复制失败（退出码 " + I64(code) + L"，详见上方日志）";
                 if (!IsElevated())
-                    out.hint = L"duplicatescheme 需要管理员权限（请提权后重试）。";
+                    out.hint = T(L"duplicatescheme 需要管理员权限（请提权后重试）。");
             }
             out.canClean = true;
         }
@@ -1154,8 +1154,8 @@ public:
 
             out.summary = L"发现 " + I64(n) + L" 个缺失更新（合计约 " +
                           FormatSize(totalBytes) + L"）· 检索结果：" + WuResultText(rc);
-            out.hint = L"本模块只查询不安装；安装请在「设置 → Windows 更新」中进行。"
-                       L"检索为同步阻塞，如长时间无响应多为网络受限。";
+            out.hint = wstring(T(L"本模块只查询不安装；安装请在「设置 → Windows 更新」中进行。"))
+                       + T(L"检索为同步阻塞，如长时间无响应多为网络受限。");
             ctx.Report(100, L"缺失更新检索完成");
         } while (false);
 
@@ -1167,7 +1167,7 @@ public:
 
         if (!failReason.empty()) {
             out.summary = failReason;
-            out.hint = L"常见原因：网络受限/离线、WSUS 组策略接管、Windows Update 服务未运行。";
+            out.hint = T(L"常见原因：网络受限/离线、WSUS 组策略接管、Windows Update 服务未运行。");
             out.canClean = false;
             return;
         }

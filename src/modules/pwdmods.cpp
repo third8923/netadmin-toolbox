@@ -782,8 +782,8 @@ public:
                       L" 个窗口：读出 " + U64((unsigned long long)okN) +
                       L" 个密码，" + U64((unsigned long long)emptyN) +
                       L" 个为空，" + U64((unsigned long long)failN) + L" 个读取失败";
-        out.hint = L"仅覆盖标准 Win32 密码框（Edit/RichEdit）；浏览器、UWP 等自绘界面无法读取。"
-                   L"请仅查看本机自己有权限的窗口。";
+        out.hint = wstring(T(L"仅覆盖标准 Win32 密码框（Edit/RichEdit）；浏览器、UWP 等自绘界面无法读取。"))
+                   + T(L"请仅查看本机自己有权限的窗口。");
         out.canClean = !revealed_.empty();
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
@@ -990,7 +990,7 @@ public:
         }
         if (anyAes && !target) {
             addInfo(L"暂不支持", L"检测到 AES 加密 ZIP（WinZip/7-Zip 新版默认），本模块仅支持传统 ZipCrypto");
-            out.hint = L"可用 7-Zip 重打包并选择「ZipCrypto 传统加密」后再试";
+            out.hint = T(L"可用 7-Zip 重打包并选择「ZipCrypto 传统加密」后再试");
             out.summary = L"AES 加密的 ZIP 暂不支持";
             ctx.Log(out.summary);
             ctx.Report(100, out.summary);
@@ -1040,8 +1040,8 @@ public:
                 r.sortKey = 0xFFFFFFFFFFFFFFFFull;
                 out.rows.push_back(r);
                 out.summary = L"加密方式已确认（ZipCrypto），可开始破解";
-                out.hint = L"掩码：d:4-8（纯数字4-8位）/ l:1-6 / a:1-8 / 0123ab:1-5；"
-                           L"字典：dict:\\path\\list.txt。留空 = 仅检测。";
+                out.hint = wstring(T(L"掩码：d:4-8（纯数字4-8位）/ l:1-6 / a:1-8 / 0123ab:1-5；"))
+                           + T(L"字典：dict:\\path\\list.txt。留空 = 仅检测。");
                 ctx.Log(out.summary);
                 ctx.Report(100, out.summary);
                 return;
@@ -1115,7 +1115,7 @@ public:
                           U64(st.tried.load() + 1) + L" 个候选）";
             ctx.Log(L"  ✓ 密码命中：" + foundPwd_ + L"（" + st.foundEnc +
                     L" 编码，已通过解压+CRC 全量校验，无误报）");
-            out.hint = L"密码已通过整条目解压校验，可直接用于解压软件";
+            out.hint = T(L"密码已通过整条目解压校验，可直接用于解压软件");
         } else if (cancelled) {
             r.c3 = L"已停止";
             r.c4 = L"已尝试 " + U64(st.tried.load()) + L" 个候选";
@@ -1127,7 +1127,7 @@ public:
             out.rows.push_back(r);
             out.summary = L"破解完成：候选空间内未找到密码（用时 " +
                           F64(elapsed / 1000.0) + L" 秒）";
-            out.hint = L"可换更大的字典或扩大掩码范围重试；AES/7z/RAR 加密不在支持范围";
+            out.hint = T(L"可换更大的字典或扩大掩码范围重试；AES/7z/RAR 加密不在支持范围");
         }
         out.canClean = !foundPwd_.empty();
         ctx.Log(out.summary);
@@ -1222,8 +1222,8 @@ public:
 
         out.summary = L"共 " + U64(count) + L" 条凭据，" +
                       U64((unsigned long long)readable) + L" 条可读出密码";
-        out.hint = L"域密码（SSO）由系统加密保护，工具按设计不展示；"
-                   L"通用凭据的密码以明文复制时请留意周围环境。";
+        out.hint = wstring(T(L"域密码（SSO）由系统加密保护，工具按设计不展示；"))
+                   + T(L"通用凭据的密码以明文复制时请留意周围环境。");
         out.canClean = readable > 0;
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
@@ -1424,7 +1424,7 @@ public:
 
         out.summary = L"共 " + U64(names.size()) + L" 个配置文件，" +
                       U64((unsigned long long)withPwd) + L" 个读出密码";
-        out.hint = L"仅本机当前用户的已保存网络；企业级（802.1X）证书认证不出明文密码";
+        out.hint = T(L"仅本机当前用户的已保存网络；企业级（802.1X）证书认证不出明文密码");
         out.canClean = withPwd > 0;
         ctx.Log(out.summary);
         ctx.Report(100, out.summary);
