@@ -11,8 +11,8 @@ FONT_MONO     RCDATA "res/fonts/jbmono-regular-subset.bin"
 FONT_MONO_SB  RCDATA "res/fonts/jbmono-semibold-subset.bin"
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 2,17,0,0
-PRODUCTVERSION 2,17,0,0
+FILEVERSION 2,18,0,0
+PRODUCTVERSION 2,18,0,0
 FILEFLAGSMASK 0x3fL
 FILEFLAGS 0x0L
 FILEOS VOS_NT_WINDOWS32
@@ -25,12 +25,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "biohacker.fun"
             VALUE "FileDescription", "NetAdmin Toolbox - extensible network admin toolkit (biohacker.fun flagship product)"
-            VALUE "FileVersion", "2.17.0.0"
+            VALUE "FileVersion", "2.18.0.0"
             VALUE "InternalName", "netadmin-toolbox"
             VALUE "LegalCopyright", "MIT License. (c) biohacker.fun"
             VALUE "OriginalFilename", "netadmin-toolbox.exe"
             VALUE "ProductName", "NetAdmin Toolbox"
-            VALUE "ProductVersion", "2.17.0.0"
+            VALUE "ProductVersion", "2.18.0.0"
         END
     END
     BLOCK "VarFileInfo"

@@ -44,6 +44,8 @@ void ShutdownGdiplus() {
     }
 }
 
+bool GdiplusReady() { return g_gdiplus; }
+
 // ---------------------------------------------------------------- AA 圆角
 
 namespace {

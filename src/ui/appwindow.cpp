@@ -5,6 +5,7 @@
 #include "ui/dialog.h"
 #include "ui/dpi.h"
 #include "ui/gdi.h"
+#include "ui/icons.h"
 #include "cleaner.h"
 #include "common.h"
 #include "lang.h"
@@ -105,87 +106,9 @@ bool ContainsCI(const wstring& haystack, const wstring& needle) {
     return ToLower(haystack).find(ToLower(needle)) != wstring::npos;
 }
 
-// 模块 → 侧栏图标（Segoe MDL2 字形，Win10/11 自带）
-wchar_t PickIcon(const IModule* m) {
-    const wchar_t* id = m->Id() ? m->Id() : L"";
-
-    // 先按模块 ID 精确映射，保证同一个分组里的图标语义不重复、不串味
-    struct Fix { const wchar_t* id; wchar_t glyph; };
-    static const Fix kMap[] = {
-        { L"sys.info",      0xE770 },  // System
-        { L"sys.disk",      0xEDA2 },  // HardDrive
-        { L"sys.process",   0xE9F5 },  // Processing
-        { L"sys.startup",   0xE768 },  // Play
-        { L"sys.services",  0xE7EF },  // Admin
-        { L"sys.tasks",     0xE823 },  // Recent（时钟回旋，计划任务语义）
-        { L"sys.hotfix",    0xE895 },  // Sync
-        { L"sys.env",       0xE713 },  // Settings
-        { L"sys.hosts",     0xE8A5 },  // Document
-        { L"net.adapters",  0xE968 },  // Network
-        { L"net.conn",      0xE71B },  // Link
-        { L"net.portscan",  0xE968 },  // Network
-        { L"net.lanscan",   0xE774 },  // Globe
-        { L"net.diag",      0xE9D9 },  // Diagnostic
-        { L"net.route",     0xE71B },  // Link
-        { L"net.arp",       0xE950 },  // Chipset
-        { L"net.flushdns",  0xE895 },  // Sync
-        { L"net.wifi",      0xE701 },  // Wifi
-        { L"tweak.winopt",  0xE713 },  // Settings
-        { L"tool.move",     0xE8B7 },  // Folder
-        { L"tool.usermigrate", 0xE8B7 },
-        // 安全体检（v2.8 T04）
-        { L"sec.scan",      0xE9D9 },  // Diagnostic（与 net.diag 复用，已验证字形）
-        { L"sec.repair",    0xE90F },  // Repair
-        // 常用管理（v2.8 T05）
-        { L"sys.restore",   0xE81C },  // History（时间回溯，还原点语义）
-        { L"sys.users",     0xE77B },  // Contact
-        { L"sys.shares",    0xE8B7 },  // Folder（与 tool.move 复用，已验证字形）
-        { L"sys.events",    0xE7C3 },  // Flag（事件标记语义）
-        { L"sys.power",     0xE945 },  // LightningBolt
-        { L"sys.update",    0xE895 },  // Sync（与 sys.hotfix 复用，已验证字形）
-        // 软件管家（winget）
-        { L"soft.rec",         0xE73E },  // Install
-        { L"soft.rec.browser", 0xE774 },  // Globe
-        { L"soft.rec.file",    0xE8B7 },  // Folder
-        { L"soft.rec.office",  0xE8A5 },  // Document
-        { L"soft.rec.dev",     0xE950 },  // Chipset
-        { L"soft.rec.media",   0xE768 },  // Play
-        { L"soft.rec.chat",    0xE7EF },  // Admin
-        { L"soft.rec.sys",     0xE713 },  // Settings
-        { L"soft.search",      0xE721 },  // Search
-        { L"soft.installed",   0xE770 },  // AllApps
-        { L"soft.upgrade",     0xE895 },  // Sync
-        // 账户与域（v2.9 T02）
-        { L"sys.acct",         0xE77B },  // Contact（与 sys.users 复用，已验证字形）
-        { L"sys.domain",       0xE823 },  // Recent（时钟回旋，与 sys.tasks 复用，已验证字形）
-        // 共享部署与映射（v2.9 T03/T04）
-        { L"net.sharehost",    0xE77B },  // Contact（本机服务语义，已验证字形）
-        { L"net.sharemap",     0xE8B7 },  // Folder（共享文件夹/映射语义，已验证字形）
-        // 净化中心（v2.13 M1）
-        { L"purg.scan",        0xE72E },  // Shield（查杀/防护语义）
-    };
-    for (const auto& f : kMap)
-        if (wcscmp(id, f.id) == 0) return f.glyph;
-
-    const wchar_t* title = m->Title() ? m->Title() : L"";
-    auto idHas = [&](const wchar_t* k) { return wcsstr(id, k) != nullptr; };
-    auto tHas = [&](const wchar_t* k) { return wcsstr(title, k) != nullptr; };
-
-    if (idHas(L"net.") || tHas(L"网络") || tHas(L"端口") || tHas(L"路由") ||
-        tHas(L"无线") || tHas(L"ARP") || tHas(L"DNS") || tHas(L"局域网") ||
-        tHas(L"适配器") || tHas(L"连接"))
-        return 0xE968;  // Network
-    if (idHas(L"clean.") || tHas(L"清理") || tHas(L"缓存"))
-        return 0xE74D;  // Delete
-    if (idHas(L"scan.") || tHas(L"文件") || tHas(L"目录") ||
-        tHas(L"磁盘") || tHas(L"空间") || tHas(L"软件"))
-        return 0xEDA2;  // HardDrive
-    if (idHas(L"tweak.") || tHas(L"优化"))
-        return 0xE713;  // Settings
-    if (idHas(L"tool."))
-        return 0xE8B7;  // Folder
-    return 0xE946;      // Info
-}
+// 模块 → 侧栏图标：v2.18 起改为自研 24×24 矢量线性图标（ui/icons）。
+// 旧 Segoe MDL2 字形方案在部分系统字体版本下缺字（渲染成感叹号/豆腐块），
+// 自绘矢量彻底摆脱系统图标字体依赖，且与 VI-D2 手册的线稿风格一脉相承。
 
 // 读取控件文本（短文本安全）
 wstring GetWndText(HWND h) {
@@ -2048,12 +1971,11 @@ void AppWindow::DrawNavItem(const DRAWITEMSTRUCT* d) {
         ui::FillRoundRect(d->hDC, pillRc, dpi::S(d::radius::Pill), pill);
     }
 
-    wchar_t glyph = PickIcon(mods_[e.moduleIndex]);
-    RECT ir = { d->rcItem.left + dpi::S(22), d->rcItem.top,
-                d->rcItem.left + dpi::S(42), d->rcItem.bottom };
-    ui::DrawGlyphCentered(d->hDC, glyph, ir,
-                          sel ? color::OnAccent : (hover ? color::Text : color::Text2),
-                          ui::res::Icon);
+    int ic = mz::ui::icon::For(mods_[e.moduleIndex]->Id());
+    RECT ir = { d->rcItem.left + dpi::S(21), d->rcItem.top,
+                d->rcItem.left + dpi::S(43), d->rcItem.bottom };
+    mz::ui::icon::Draw(d->hDC, ic, ir,
+                       sel ? color::OnAccent : (hover ? color::Text : color::Text2));
 
     RECT tr = { d->rcItem.left + dpi::S(50), d->rcItem.top,
                 d->rcItem.right - dpi::S(14), d->rcItem.bottom };

@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-lightgrey) ![Language](https://img.shields.io/badge/C%2B%2B-20-00599C) ![Modules](https://img.shields.io/badge/modules-69-success)
 
-**v2.17 · 69 modules · 15 groups** · VI-D2 branded UI · Pure Win32 owner-draw · **No third-party libraries** · Chinese / Traditional Chinese / English UI
+**v2.18 · 69 modules · 15 groups** · VI-D2 branded UI · Pure Win32 owner-draw · **No third-party libraries** · Chinese / Traditional Chinese / English UI
 
 ![Main window](screenshots/vi-main-paper.png)
 
@@ -26,6 +26,7 @@
 
 | Version | Key additions |
 | --- | --- |
+| v2.18 | **Custom vector icon set**: all 69 sidebar entries redrawn as in-house 24×24 stroke icons (GDI+ AA, single stroke weight, rounded caps) — replaces Segoe MDL2 glyphs whose missing-codepoint fallback rendered as exclamation boxes on some systems |
 | v2.17 | Full-UI rebrand to the biohacker.fun **VI-D2 "Metamorphosis Wing"** design system: paper/ink dual themes (Ctrl+T), butterfly vector logo + `biohacker·fun` wordmark (GDI+ AA), embedded Baloo 2 / JetBrains Mono subsets (OFL 1.1), brand empty/error states, splash screen, About-page morph timeline, WCAG-AA verified tokens (69 modules unchanged) |
 | v2.16 | Mesh Assistant (`net.mesh`): headscale/Tailscale onboarding, config-string import, built-in QR encoder |
 | v2.15 | Update locker (`purg.wulock`), graphical hosts editor, DNS optimizer (`net.dnsopt`), i18n expansion, **Remote Terminal** group (`net.sessions` / `net.tunnel` / `net.serial`) |

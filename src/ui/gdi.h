@@ -128,6 +128,8 @@ private:
 // Shutdown 与进程字体资源一起在 FreeResources 释放，崩溃域与 v2.16 一致。
 void EnsureGdiplus();
 void ShutdownGdiplus();
+// GDI+ 是否已成功启动（EnsureGdiplus 之后查询）
+bool GdiplusReady();
 
 // 圆角矩形（r≤2 保留 GDI 快路径；r>2 走 GDI+ GraphicsPath 抗锯齿——
 // CreateRoundRectRgn 的锯齿边在 VI 胶囊/大圆角上不可接受）
