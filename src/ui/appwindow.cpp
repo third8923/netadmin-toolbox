@@ -426,6 +426,30 @@ int AppWindow::Run(HINSTANCE hInst, int nCmdShow) {
     ShowWindow(hwnd_, nCmdShow);
     UpdateWindow(hwnd_);
 
+    // v2.18：显式取前台。窗口由提权中转或其他程序拉起时，系统会拒绝
+    // 该进程的自动激活（前景锁），主窗只挂在任务栏不上屏——用户必须
+    // 手点任务栏。AttachThreadInput 借当前前台线程的输入队列解除限制。
+    if (nCmdShow != SW_HIDE) {
+        HWND fg = GetForegroundWindow();
+        if (fg != hwnd_) {
+            DWORD cur = GetCurrentThreadId();
+            DWORD fore = fg ? GetWindowThreadProcessId(fg, nullptr) : 0;
+            bool ok = false;
+            if (fore && fore != cur) {
+                if (AttachThreadInput(cur, fore, TRUE)) {
+                    BringWindowToTop(hwnd_);
+                    ok = SetForegroundWindow(hwnd_) != 0;
+                    SetFocus(hwnd_);
+                    AttachThreadInput(cur, fore, FALSE);
+                }
+            }
+            if (!ok) {
+                BringWindowToTop(hwnd_);
+                SetForegroundWindow(hwnd_);
+            }
+        }
+    }
+
     MSG msg;
     while (GetMessageW(&msg, nullptr, 0, 0) > 0) {
         TranslateMessage(&msg);

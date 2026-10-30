@@ -40,17 +40,15 @@ def clamp01(v):
 
 
 def inside_round_rect(x, y, rx, ry, rw, rh, r):
-    """圆角矩形内距离（<=0 内部，返回有符号距离近似）"""
+    """圆角矩形精确 SDF（IQ 公式）：<=0 内部，幅值 = 到边缘有符号距离"""
     if rw <= 0 or rh <= 0:
         return 1.0
     r = min(r, rw / 2, rh / 2)
-    cx2 = rx + rw
-    cy2 = ry + rh
-    qx = max(rx + r - x, x - (cx2 - r), 0)
-    qy = max(ry + r - y, y - (cy2 - r), 0)
-    outside = math.hypot(qx, qy)
-    inside = min(max(rx + r - x, x - (cx2 - r)), max(ry + r - y, y - (cy2 - r)))
-    return max(outside, inside) if outside > 0 else inside
+    qx = abs(x - (rx + rw / 2)) - (rw / 2 - r)
+    qy = abs(y - (ry + rh / 2)) - (rh / 2 - r)
+    outside = math.hypot(max(qx, 0.0), max(qy, 0.0))
+    inside = min(max(qx, qy), 0.0)
+    return outside + inside - r
 
 
 def inside_ellipse(x, y, cx, cy, a, b):
@@ -84,10 +82,11 @@ def render(scale_boost=1.0):
     def to_canvas(px, py):
         """图标画布 256×256 中心正方形 240×160 蝶形画布映射"""
         # 蝶形画布 240×160 放在图标中央，占宽 82%
+        # px/py 是超采样像素坐标（0..N），先减偏移再缩放到画布 0..240 / 0..160
         cw, chh = 0.82 * N, 0.82 * N * (160 / 240)
         ox = (N - cw) / 2
         oy = (N - chh) / 2
-        return ox + px / 240 * cw, oy + py / 160 * chh
+        return (px - ox) * 240.0 / cw, (py - oy) * 160.0 / chh
 
     out = bytearray(N * N * 4)
 
@@ -126,7 +125,8 @@ def render(scale_boost=1.0):
             i = row + px_i * 4
 
             # ---- 背景：纸底圆角方块（圆角外透明）----
-            bg_cov = coverage(-inside_round_rect(px, py, 0, 0, N, N, R_BG), aa)
+            # coverage(v) 期望 v 为有符号距离（内负外正）：内部 → 0.5-v/aa ≈ 1
+            bg_cov = coverage(inside_round_rect(px, py, 0, 0, N, N, R_BG), aa)
             if bg_cov <= 0:
                 continue
             r, g, b, a = *PAPER, int(255 * bg_cov)
