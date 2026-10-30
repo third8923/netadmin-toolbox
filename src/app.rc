@@ -1,11 +1,18 @@
 #include <windows.h>
 
-// 应用图标（由 tools/gen_icon.py 生成：DNA 双螺旋 + 终端光标）
+// 应用图标（v2.17 由 tools/gen_icon.py 生成：VI-D2 蝶形符号 E 变体）
 APPICON ICON "app.ico"
 
+// ---- 内嵌字体子集（v2.17 VI-D2，OFL 1.1；运行期 AddFontMemResourceEx）----
+// Baloo 2 800（Display 层字标/页题，U+0020-007E 子集）
+FONT_BALOO2   RCDATA "res/fonts/baloo2-800-subset.bin"
+// JetBrains Mono Regular / SemiBold（Data 层等宽，U+0020-007E + U+00B7）
+FONT_MONO     RCDATA "res/fonts/jbmono-regular-subset.bin"
+FONT_MONO_SB  RCDATA "res/fonts/jbmono-semibold-subset.bin"
+
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 2,16,0,0
-PRODUCTVERSION 2,16,0,0
+FILEVERSION 2,17,0,0
+PRODUCTVERSION 2,17,0,0
 FILEFLAGSMASK 0x3fL
 FILEFLAGS 0x0L
 FILEOS VOS_NT_WINDOWS32
@@ -18,12 +25,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "biohacker.fun"
             VALUE "FileDescription", "NetAdmin Toolbox - extensible network admin toolkit (biohacker.fun flagship product)"
-            VALUE "FileVersion", "2.16.0.0"
+            VALUE "FileVersion", "2.17.0.0"
             VALUE "InternalName", "netadmin-toolbox"
             VALUE "LegalCopyright", "MIT License. (c) biohacker.fun"
             VALUE "OriginalFilename", "netadmin-toolbox.exe"
             VALUE "ProductName", "NetAdmin Toolbox"
-            VALUE "ProductVersion", "2.16.0.0"
+            VALUE "ProductVersion", "2.17.0.0"
         END
     END
     BLOCK "VarFileInfo"

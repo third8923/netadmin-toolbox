@@ -15,8 +15,11 @@ HFONT BodyStrong = nullptr;
 HFONT Small = nullptr;
 HFONT SmallStrong = nullptr;
 HFONT Title = nullptr;
+HFONT Lead = nullptr;
 HFONT PageTitle = nullptr;
+HFONT Wordmark = nullptr;
 HFONT Mono = nullptr;
+HFONT MonoStrong = nullptr;
 HFONT Icon = nullptr;
 HFONT IconSm = nullptr;
 HFONT IconLg = nullptr;
@@ -58,29 +61,48 @@ LRESULT CALLBACK ButtonHoverProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
 void InitResources(UINT dpi) {
     namespace font = design::font;
     FreeResources();
+    EnsureGdiplus();   // GDI+ 生命周期：首次资源创建前预热（r>2 圆角 AA 用）
+
     const wchar_t* kFace = L"Microsoft YaHei UI";
+    // Display 层：Baloo 2 800（内嵌子集；加载失败回落雅黑，品牌降级不破版）
+    const wchar_t* kDisplayFace = design::fontsys::HasDisplayFont()
+                                      ? L"Baloo 2" : kFace;
+    // Data 层：JetBrains Mono → Cascadia Mono → Consolas 回落链
+    const wchar_t* kMonoFace = L"Consolas";
+    if (design::fontsys::HasMonoFont())      kMonoFace = L"JetBrains Mono";
+    else if (design::fontsys::FamilyAvailable(L"Cascadia Mono"))
+        kMonoFace = L"Cascadia Mono";
+
+    // ---- 七级字阶（Body 16 / Label 14.5 走 S(double)）----
     res::Body      = CreateFontW(dpi::S(font::Body), 0, 0, 0, FW_NORMAL, 0, 0, 0,
                                  DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
                                  CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, kFace);
-    res::BodyStrong = CreateFontW(dpi::S(font::Body), 0, 0, 0, FW_SEMIBOLD, 0, 0, 0,
+    res::BodyStrong = CreateFontW(dpi::S(font::Body), 0, 0, 0, FW_BOLD, 0, 0, 0,
                                  DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
                                  CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, kFace);
-    res::Small     = CreateFontW(dpi::S(font::Small), 0, 0, 0, FW_NORMAL, 0, 0, 0,
+    res::Small     = CreateFontW(dpi::S(font::Label), 0, 0, 0, 500, 0, 0, 0,
                                  DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
                                  CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, kFace);
-    res::SmallStrong = CreateFontW(dpi::S(font::SmallStrong), 0, 0, 0, FW_SEMIBOLD, 0, 0, 0,
+    res::SmallStrong = CreateFontW(dpi::S(font::Label), 0, 0, 0, FW_BOLD, 0, 0, 0,
                                  DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
                                  CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, kFace);
-    res::Title     = CreateFontW(dpi::S(font::Title), 0, 0, 0, FW_SEMIBOLD, 0, 0, 0,
+    res::Title     = CreateFontW(dpi::S(font::Title), 0, 0, 0, FW_BOLD, 0, 0, 0,
                                  DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
                                  CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, kFace);
-    res::PageTitle = CreateFontW(dpi::S(font::PageTitle), 0, 0, 0, FW_SEMIBOLD, 0, 0, 0,
+    res::Lead      = CreateFontW(dpi::S(font::Lead), 0, 0, 0, 500, 0, 0, 0,
                                  DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
                                  CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, kFace);
-    // 日志与正文同族：Consolas 无中文字形，中文会回退宋体导致字形混杂
-    res::Mono      = CreateFontW(dpi::S(font::Mono), 0, 0, 0, FW_NORMAL, 0, 0, 0,
+    res::PageTitle = CreateFontW(dpi::S(font::Display), 0, 0, 0, 800, 0, 0, 0,
                                  DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
-                                 CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, kFace);
+                                 CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE,
+                                 kDisplayFace);
+    res::Wordmark  = CreateFontW(dpi::S(font::Wordmark), 0, 0, 0, 800, 0, 0, 0,
+                                 DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
+                                 CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE,
+                                 kDisplayFace);
+    // Data 层等宽（数据列/日志/时间戳；中文由 GDI 字体链接回落雅黑）
+    res::Mono      = design::fontsys::DataFont(dpi::S(font::Data), false);
+    res::MonoStrong = design::fontsys::DataFont(dpi::S(font::Data), true);
     res::Icon      = CreateFontW(dpi::S(19), 0, 0, 0, FW_NORMAL, 0, 0, 0,
                                  DEFAULT_CHARSET, OUT_TT_PRECIS, CLIP_DEFAULT_PRECIS,
                                  CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE,
@@ -97,9 +119,11 @@ void InitResources(UINT dpi) {
 
 void FreeResources() {
     for (HFONT* f : { &res::Body, &res::BodyStrong, &res::Small, &res::SmallStrong,
-                      &res::Title, &res::PageTitle, &res::Mono, &res::Icon, &res::IconSm,
+                      &res::Title, &res::Lead, &res::PageTitle, &res::Wordmark,
+                      &res::Mono, &res::MonoStrong, &res::Icon, &res::IconSm,
                       &res::IconLg })
         if (*f) { DeleteObject(*f); *f = nullptr; }
+    ShutdownGdiplus();
 }
 
 // ---------------------------------------------------------------- 按钮
@@ -108,8 +132,15 @@ void InstallButtonHover(HWND btn) {
     SetWindowSubclass(btn, ButtonHoverProc, 1, 0);
 }
 
+// owner-draw 按钮：VI-D2 胶囊语法（radius::Pill=999，FillRoundRect 内部钳制
+// 到高度一半）。样式 → 角色令牌映射（§1.7 表）：
+//   Primary   主按钮/危险确认主键 = BtnFill 墨底反白（危险键同色，不用红）
+//   Secondary 次级 = Hover 面 + Hairline 描边圆头
+//   Ghost     透明融入底色（侧栏辅助钮）
+//   Danger    与 Primary 同底（VI 纪律：危险确认用墨底反白，红只归数据层）
 void DrawFluentButton(const DRAWITEMSTRUCT* d, ButtonStyle style, COLORREF accent,
                       wchar_t glyph, COLORREF bg) {
+    namespace c = design::color;
     const bool disabled = (d->itemState & ODS_DISABLED) != 0;
     const bool pressed  = (d->itemState & ODS_SELECTED) != 0;
     const bool focus    = (d->itemState & ODS_FOCUS) != 0;
@@ -119,53 +150,46 @@ void DrawFluentButton(const DRAWITEMSTRUCT* d, ButtonStyle style, COLORREF accen
     GetWindowTextW(d->hwndItem, text, 160);
 
     RECT rc = d->rcItem;
-    COLORREF fill = design::color::Surface;
-    COLORREF line = design::color::Border;
-    COLORREF fg = design::color::Text;
+    COLORREF fill = c::Canvas;
+    COLORREF line = c::Hairline;
+    bool stroked = false;
+    COLORREF fg = c::Text;
 
     switch (style) {
     case ButtonStyle::Primary:
-        if (disabled) { fill = design::color::PrimaryDisabled; fg = design::color::TextFaint; }
-        else {
-            fill = pressed ? design::color::PrimaryDim
-                           : (hover ? design::color::PrimaryHi : accent);
-            fg = design::color::OnPrimary;
-        }
-        break;
     case ButtonStyle::Danger:
-        if (disabled) { fill = design::color::DangerDisabled; fg = design::color::TextFaint; }
-        else {
-            fill = pressed ? design::color::DangerDim
-                           : (hover ? design::color::DangerHi : design::color::Danger);
-            fg = design::color::OnDanger;
-        }
+        // 主键 = 墨底反白（暗主题 = 纸底反白）；危险确认键同色（红只归数据层）
+        // 悬停轻微提亮（向底色混 13%），按下回实底——文字对比度全程 ≥9:1
+        if (disabled) { fill = BlendColor(c::BtnFill, c::Canvas, 600);
+                        fg = BlendColor(c::BtnText, c::Canvas, 600); }
+        else if (hover && !pressed) { fill = BlendColor(c::BtnFill, c::Canvas, 870);
+                                      fg = c::BtnText; }
+        else              { fill = c::BtnFill; fg = c::BtnText; }
         break;
     case ButtonStyle::Ghost:
-        if (disabled) { fill = design::color::Surface; fg = design::color::TextFaint; }
+        if (disabled) { fill = bg; fg = c::Text3; }
         else {
-            fill = pressed ? design::color::SurfaceSel
-                           : (hover ? design::color::SurfaceHi : design::color::Surface);
-            fg = disabled ? design::color::TextFaint
-                          : (hover ? design::color::Text : design::color::TextSub);
+            fill = pressed ? c::AccentSoft : (hover ? c::Hover : bg);
+            fg = disabled ? c::Text3 : (hover || pressed ? c::Text : c::Text2);
         }
         break;
     case ButtonStyle::Secondary:
     default:
-        if (disabled) { fill = design::color::Surface; fg = design::color::TextFaint; }
+        if (disabled) { fill = c::Canvas; fg = c::Text3; }
         else {
-            fill = pressed ? design::color::SurfaceSel
-                           : (hover ? design::color::SurfaceHi : design::color::Surface);
-            fg = disabled ? design::color::TextFaint
-                          : (hover ? design::color::Text : design::color::Text);
+            fill = pressed ? c::AccentSoft
+                           : (hover ? c::Hover : c::Canvas);
+            fg = disabled ? c::Text3 : c::Text;
         }
-        line = design::color::Border;   // BorderSoft 在白底上几乎看不见，按钮会"消失"
+        line = c::Hairline;   // 次级按钮 = 描边圆头，无硬投影
+        stroked = true;
         break;
     }
 
-    FillSolid(d->hDC, rc, bg);   // 圆角外的四角：不铺底色，深色主题会露白
-    FillRoundRect(d->hDC, rc, dpi::S(design::radius::Button), fill);
-    if (style == ButtonStyle::Secondary)
-        StrokeRoundRect(d->hDC, rc, dpi::S(design::radius::Button), line, 1);
+    FillSolid(d->hDC, rc, bg);   // 圆角外的四角：不铺底色会露系统灰
+    FillRoundRect(d->hDC, rc, dpi::S(design::radius::Pill), fill);
+    if (stroked)
+        StrokeRoundRect(d->hDC, rc, dpi::S(design::radius::Pill), line, 1);
 
     if (glyph) {
         // 图标 + 文字作为一组整体居中：比「图标贴左、文字居中」更稳，
@@ -191,15 +215,18 @@ void DrawFluentButton(const DRAWITEMSTRUCT* d, ButtonStyle style, COLORREF accen
                  fg, res::Body);
     }
 
-    if (focus && !disabled && style != ButtonStyle::Primary) {
+    if (focus && !disabled && style != ButtonStyle::Primary &&
+        style != ButtonStyle::Danger) {
+        // 焦点环：Accent 两档线宽中的强调档（非主键才有描边焦点环）
         RECT fr = rc;
-        InflateRect(&fr, -3, -3);
-        DrawFocusRect(d->hDC, &fr);
+        InflateRect(&fr, -dpi::S(3), -dpi::S(3));
+        StrokeRoundRect(d->hDC, fr, dpi::S(design::radius::Pill), c::Accent, 2);
     }
 }
 
 void DrawIconButton(const DRAWITEMSTRUCT* d, wchar_t glyph,
                     COLORREF bg, COLORREF accent) {
+    namespace c = design::color;
     const bool disabled = (d->itemState & ODS_DISABLED) != 0;
     const bool pressed  = (d->itemState & ODS_SELECTED) != 0;
     const bool hover    = GetPropW(d->hwndItem, kPropHover) != nullptr;
@@ -210,12 +237,12 @@ void DrawIconButton(const DRAWITEMSTRUCT* d, wchar_t glyph,
     if (hover || pressed) {
         RECT t = rc;
         InflateRect(&t, -dpi::S(1), -dpi::S(1));
-        FillRoundRect(d->hDC, t, dpi::S(design::radius::Button),
-                      pressed ? design::color::SurfaceSel : design::color::SurfaceHi);
+        FillRoundRect(d->hDC, t, dpi::S(design::radius::Pill),
+                      pressed ? c::AccentSoft : c::Hover);
     }
     DrawGlyphCentered(d->hDC, glyph, rc,
-                      disabled ? design::color::TextFaint
-                               : (hover ? design::color::Text : accent),
+                      disabled ? c::Text3
+                               : (hover || pressed ? c::Text : accent),
                       res::IconLg);
 }
 
@@ -238,7 +265,7 @@ LRESULT CALLBACK SearchEditProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
             RECT tr = { rc.left + dpi::S(1), rc.top, rc.right - dpi::S(2), rc.bottom };
             DrawText(dc, cue, tr,
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS,
-                     design::color::TextFaint, res::Body);
+                     design::color::Text3, res::Body);
             ReleaseDC(hwnd, dc);
         }
     }
@@ -298,10 +325,10 @@ void DrawSearchClearButton(const DRAWITEMSTRUCT* d) {
         int cx = (rc.left + rc.right) / 2;
         int cy = (rc.top + rc.bottom) / 2;
         RECT bg = { cx - r, cy - r, cx + r, cy + r };
-        FillRoundRect(d->hDC, bg, r, pressed ? design::color::Border
-                                             : design::color::SurfaceHi);
+        FillRoundRect(d->hDC, bg, r, pressed ? design::color::Hairline
+                                             : design::color::Hover);
     }
-    DrawGlyphCentered(d->hDC, 0xE894, rc, design::color::TextSub, res::Icon);
+    DrawGlyphCentered(d->hDC, 0xE894, rc, design::color::Text2, res::Icon);
 }
 
 // ---------------------------------------------------------------- Toast
@@ -317,7 +344,7 @@ enum class ToastPhase { In, Hold, Out, Done };
 struct ToastState {
     HWND parent = nullptr;
     std::wstring text;
-    COLORREF accent = design::color::Primary;
+    COLORREF accent = design::color::Accent;
     wchar_t glyph = 0xE73E;
     int alpha = 0;
     int tick = 0;
@@ -337,15 +364,15 @@ LRESULT CALLBACK ToastWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         DoubleBuffer db;
         HDC mem = db.Begin(dc, rc);
         if (mem) {
-            FillRoundRect(mem, rc, dpi::S(design::radius::Card), design::color::Surface);
-            StrokeRoundRect(mem, rc, dpi::S(design::radius::Card), design::color::Border, 1);
-            // 图标底：主色淡化成的圆底，比左侧色条更现代
+            FillRoundRect(mem, rc, dpi::S(design::radius::Card), design::color::Canvas);
+            StrokeRoundRect(mem, rc, dpi::S(design::radius::Card),
+                            design::color::Hairline, 1);
+            // 图标底：AccentSoft 柔光圆底
             int pad = dpi::S(kToastPadX);
             int box = dpi::S(30);
             RECT ir = { rc.left + pad, (rc.top + rc.bottom - box) / 2,
                         rc.left + pad + box, (rc.top + rc.bottom + box) / 2 };
-            FillRoundRect(mem, ir, box / 2,
-                          BlendColor(g_toast.accent, design::color::Surface, 860));
+            FillRoundRect(mem, ir, box / 2, design::color::AccentSoft);
             DrawGlyphCentered(mem, g_toast.glyph, ir, g_toast.accent, res::Icon);
             // 文本（最多两行）
             RECT tr = { ir.right + dpi::S(10), rc.top + dpi::S(kToastPadY),
@@ -554,15 +581,15 @@ void PaintLogView(LogViewData* d, HWND hwnd) {
     HDC mem = db.Begin(dc, rc);
     if (mem) {
         SyncMetrics(d, hwnd);
-        FillSolid(mem, rc, design::color::Console);
+        FillSolid(mem, rc, design::color::Canvas);
         // 内描边极淡：日志与卡片同底，只留一圈呼吸边界
-        StrokeRoundRect(mem, rc, 0, design::color::BorderSoft);
+        StrokeRoundRect(mem, rc, 0, design::color::Hairline);
 
         if (d->lines.empty()) {
-            ui::DrawText(mem, L"暂无日志",
+            ui::DrawText(mem, lang::T(L"暂无日志"),
                          RECT{ dpi::S(14), dpi::S(10), rc.right, rc.bottom },
                          DT_LEFT | DT_TOP | DT_NOPREFIX,
-                         design::color::TextFaint, res::Mono);
+                         design::color::Text3, res::Mono);
         } else {
             int vis = VisibleLines(d, hwnd);
             if (d->scrollPos > (int)d->lines.size() - vis)
@@ -573,25 +600,27 @@ void PaintLogView(LogViewData* d, HWND hwnd) {
             for (int i = d->scrollPos; i < end; ++i, y += d->lineH) {
                 if (y >= rc.bottom) break;
                 const wchar_t* s = d->lines[i].c_str();
-                // 语义着色：与启动日志的 ✓/✗/提示 前缀对应
+                // 通道色语义（仅日志层，禁做按钮/标题）：
+                //   ✓ → ChIn（进/成功）  ✗ /「错误」 → ChErr（异常）
+                //   「提示」 → GoldText（信号小字）   ▸ → Text2（动作行）
                 COLORREF c = design::color::Text;
-                if (s[0] == L'\u2713') c = design::color::Ok;
-                else if (s[0] == L'\u2717' || std::wcsstr(s, L"错误")) c = design::color::Danger;
-                else if (std::wcsstr(s, L"提示")) c = design::color::Warn;
-                else if (s[0] == L'\u25B8') c = design::color::Primary;
+                if (s[0] == L'\u2713') c = design::color::ChIn;
+                else if (s[0] == L'\u2717' || std::wcsstr(s, L"错误")) c = design::color::ChErr;
+                else if (std::wcsstr(s, L"提示")) c = design::color::GoldText;
+                else if (s[0] == L'\u25B8') c = design::color::Text2;
                 ui::DrawText(mem, s,
                              RECT{ dpi::S(14), y, rc.right - dpi::S(14), y + d->lineH },
                              DT_LEFT | DT_TOP | DT_SINGLELINE | DT_NOPREFIX, c, res::Mono);
             }
         }
 
-        // 自绘窄滚动条：系统滚动条在这个宽度里太抢眼
+        // 自绘窄滚动条：细轨 Hairline，拖动态提亮
         RECT th = LogThumbRect(d, hwnd);
         if (th.right > th.left) {
             int r = (th.right - th.left) / 2;
             ui::FillRoundRect(mem, th, r,
-                              d->dragging ? design::color::TextFaint
-                                          : design::color::Border);
+                              d->dragging ? design::color::Text3
+                                          : design::color::Hairline);
         }
         db.End(dc);
     }

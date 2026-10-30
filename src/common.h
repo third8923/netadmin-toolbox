@@ -39,7 +39,7 @@ using ProgressFn = std::function<void(int percent, const wstring& status)>;
 using CancelFn = std::function<bool()>;
 
 constexpr int k_AppVersionMajor = 2;
-constexpr int k_AppVersionMinor = 16;
+constexpr int k_AppVersionMinor = 17;
 
 // 是否以管理员权限运行
 bool IsElevated();

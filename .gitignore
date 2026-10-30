@@ -25,3 +25,10 @@ t2.err
 8款卸载流氓软件推荐，geek、HiBit、SoftCnkiller、.txt
 Thumbs.db
 Desktop.ini
+
+# ---- VI 验收测试证据（本地保留不入库）----
+screenshots/qa-ed-*.png
+screenshots/scale-*.png
+screenshots/vi-click-*.png
+screenshots/vi-legacy-*.png
+vi-manual-D2.pdf

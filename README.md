@@ -4,9 +4,9 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue) ![Platform](https://img.shields.io/badge/platform-Windows%2010%2F11-lightgrey) ![Language](https://img.shields.io/badge/C%2B%2B-20-00599C) ![Modules](https://img.shields.io/badge/modules-69-success)
 
-**v2.16 · 69 modules · 15 groups** · Pure Win32 owner-draw UI · **No third-party libraries** · Chinese / Traditional Chinese / English UI
+**v2.17 · 69 modules · 15 groups** · VI-D2 branded UI · Pure Win32 owner-draw · **No third-party libraries** · Chinese / Traditional Chinese / English UI
 
-![Main window](screenshots/v26-2-main.png)
+![Main window](screenshots/vi-main-paper.png)
 
 ---
 
@@ -26,6 +26,7 @@
 
 | Version | Key additions |
 | --- | --- |
+| v2.17 | Full-UI rebrand to the biohacker.fun **VI-D2 "Metamorphosis Wing"** design system: paper/ink dual themes (Ctrl+T), butterfly vector logo + `biohacker·fun` wordmark (GDI+ AA), embedded Baloo 2 / JetBrains Mono subsets (OFL 1.1), brand empty/error states, splash screen, About-page morph timeline, WCAG-AA verified tokens (69 modules unchanged) |
 | v2.16 | Mesh Assistant (`net.mesh`): headscale/Tailscale onboarding, config-string import, built-in QR encoder |
 | v2.15 | Update locker (`purg.wulock`), graphical hosts editor, DNS optimizer (`net.dnsopt`), i18n expansion, **Remote Terminal** group (`net.sessions` / `net.tunnel` / `net.serial`) |
 | v2.14 | Purge Center II: rule builder (`purg.rules`), YARA scanner (`purg.yara`), homepage lock (`purg.homepage`), kernel-module & hidden-process detection |

@@ -45,12 +45,12 @@ def main():
 
     rc, out, _ = run(["--list"])
     check("--list 返回 0", rc == 0, f"rc={rc}")
-    check("--list 模块数 31", "共 31 个功能模块" in out)
+    check("--list 模块数 69", "共 69 个功能模块" in out)  # v2.10+ 模块集扩充后为 69
     check("--list 含关键模块 ID",
           all(k in out for k in ("sys.info", "net.conn", "tweak.winopt")))
 
     size_kb = os.path.getsize(EXE) / 1024
-    check("exe 体积合理（单文件）", 300 < size_kb < 3000, f"{size_kb:.0f} KB")
+    check("exe 体积合理（单文件）", 300 < size_kb < 4200, f"{size_kb:.0f} KB")  # v2.17 内嵌字体/图标后上限放宽
 
     print("\n=== 2. Windows 优化（开关型模块） ===")
     rc, out, _ = run(["run", "tweak.winopt"])

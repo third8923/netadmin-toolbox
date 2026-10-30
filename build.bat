@@ -41,7 +41,7 @@ for %%f in ("%SRC%\ui\*.cpp") do call set "FILES=%%FILES%% %%f"
 for %%f in ("%SRC%\modules\*.cpp") do call set "FILES=%%FILES%% %%f"
 
 echo [3/4] Compiling and linking
-"%GPP%" -std=c++20 -O2 -s -w -DUNICODE -D_UNICODE -municode -mwindows -I"%SRC%" -I"%ROOT%data" -o "%DIST%\%OUT%" %FILES% "%BUILD%\app_res.o" -static -static-libgcc -static-libstdc++ -lcomctl32 -ladvapi32 -lshell32 -lshlwapi -lcrypt32 -lole32 -loleaut32 -ltaskschd -lnetapi32 -lwevtapi -lpowrprof -luuid -luser32 -lgdi32 -lwindowscodecs -lpsapi -lws2_32 -liphlpapi -lwlanapi -ldnsapi -licmp -ldwmapi -luxtheme -lmpr -lwintrust -lwinhttp
+"%GPP%" -std=c++20 -O2 -s -w -DUNICODE -D_UNICODE -municode -mwindows -I"%SRC%" -I"%ROOT%data" -o "%DIST%\%OUT%" %FILES% "%BUILD%\app_res.o" -static -static-libgcc -static-libstdc++ -lcomctl32 -ladvapi32 -lshell32 -lshlwapi -lcrypt32 -lole32 -loleaut32 -ltaskschd -lnetapi32 -lwevtapi -lpowrprof -luuid -luser32 -lgdi32 -lgdiplus -lwindowscodecs -lpsapi -lws2_32 -liphlpapi -lwlanapi -ldnsapi -licmp -ldwmapi -luxtheme -lmpr -lwintrust -lwinhttp
 if errorlevel 1 goto fail
 
 echo [4/4] Verifying output

@@ -1,4 +1,5 @@
 #include "ui/appwindow.h"
+#include "ui/brand.h"
 #include "ui/controls.h"
 #include "ui/design.h"
 #include "ui/dialog.h"
@@ -22,8 +23,10 @@ namespace dpi = mz::ui::dpi;
 namespace color = mz::ui::design::color;
 namespace size = mz::ui::design::size;
 namespace space = mz::ui::design::space;
+namespace brand = mz::ui::brand;
 using mz::ui::FillSolid;
 using mz::ui::FillRoundRect;
+using mz::ui::BlendColor;
 
 namespace mz {
 namespace {
@@ -432,9 +435,10 @@ LRESULT CALLBACK HeaderSubclassProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
         ui::DoubleBuffer db;
         HDC mem = db.Begin(dc, rc);
         if (mem) {
-            FillSolid(mem, rc, color::SurfaceHi);
+            // 表头 = Panel2（Hover），底边 Hairline
+            FillSolid(mem, rc, color::Hover);
             RECT bl = { rc.left, rc.bottom - 1, rc.right, rc.bottom };
-            FillSolid(mem, bl, color::Border);
+            FillSolid(mem, bl, color::Hairline);
             static const wchar_t* kLabels[] = { L"名称", L"数值", L"分类", L"详情" };
             for (int i = 0; i < 4; ++i) {
                 RECT ir;
@@ -446,13 +450,13 @@ LRESULT CALLBACK HeaderSubclassProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp,
                 if (i == 1) fmt |= DT_RIGHT;
                 bool sorted = self && self->sortCol_ == i;
                 ui::DrawText(mem, T(kLabels[i]), tr, fmt,
-                             sorted ? color::Primary : color::TextFaint,
+                             sorted ? color::Accent : color::Text2,
                              ui::res::SmallStrong);
                 if (sorted) {
                     wchar_t arrow = self->sortAsc_ ? 0xE70E : 0xE70D;
                     RECT ar = { ir.right - dpi::S(34), rc.top,
                                 ir.right - dpi::S(14), rc.bottom };
-                    ui::DrawGlyphCentered(mem, arrow, ar, color::Primary, ui::res::Icon);
+                    ui::DrawGlyphCentered(mem, arrow, ar, color::Accent, ui::res::Icon);
                 }
             }
             db.End(dc);
@@ -474,6 +478,9 @@ int AppWindow::Run(HINSTANCE hInst, int nCmdShow) {
     dpi::EnableAwareness();
     ui::dpi::SetCurrent(ui::dpi::ForWindow(nullptr));
     dpi::SetUserScale(d::LoadUserScale());   // 恢复上次的界面缩放（先于字体创建）
+    // v2.17：内嵌字体子集必须先于 InitResources 注册——InitResources 按
+    // 字族名 CreateFontW(L"Baloo 2")，内存字体必须已就位。失败静默降级。
+    d::fontsys::LoadEmbeddedFonts();
     ui::InitResources(ui::dpi::ForWindow(nullptr));
     d::LoadThemeOnStartup();   // 恢复上次选择的主题（先于任何窗口创建）
     lang::LoadOnStartup();     // 恢复上次选择的语言（v2.12 R4，先于任何文案创建）
@@ -485,6 +492,10 @@ int AppWindow::Run(HINSTANCE hInst, int nCmdShow) {
         if (auto p = reinterpret_cast<FnMode>(GetProcAddress(ux, MAKEINTRESOURCEA(135))))
             p(3);   // SetPreferredAppMode: ForceLight
     }
+
+    // v2.17 闪屏（仅 GUI 分支）：纸底/墨底 + 蝶形 + 字标；300ms 淡入、
+    // 最长 1.5s 自动淡出，非阻塞（内部计时自毁）。
+    brand::ShowSplash(nullptr);
 
     Create(hInst);
     if (!hwnd_) { ui::FreeResources(); return 1; }
@@ -657,11 +668,11 @@ void AppWindow::OnDestroy() {
 void AppWindow::RebuildBrushes() {
     for (HBRUSH b : { bBg_, bSide_, bSurface_, bConsole_, bField_ })
         if (b) DeleteObject(b);
-    bBg_ = CreateSolidBrush(color::Bg);
-    bSide_ = CreateSolidBrush(color::Sidebar);
-    bSurface_ = CreateSolidBrush(color::Surface);
-    bConsole_ = CreateSolidBrush(color::Console);
-    bField_ = CreateSolidBrush(color::SurfaceHi);
+    bBg_ = CreateSolidBrush(color::Canvas);
+    bSide_ = CreateSolidBrush(color::Side);
+    bSurface_ = CreateSolidBrush(color::Canvas);
+    bConsole_ = CreateSolidBrush(color::Canvas);
+    bField_ = CreateSolidBrush(color::Hover);
 }
 
 void AppWindow::OnThemeChangedStatic(void* ctx) {
@@ -725,7 +736,7 @@ void AppWindow::ChangeScale(int dir) {
 
     if (after == before && dir != 0) {
         ui::ShowToast(hwnd_, L"已到缩放上下限（85% ~ 180%）",
-                      color::Warn, 0xE7BA /* Warning */);
+                      color::GoldText, 0xE7BA /* Warning */);
         return;
     }
     if (after == before) return;
@@ -762,7 +773,7 @@ void AppWindow::ChangeScale(int dir) {
 
     wchar_t msg[80];
     wsprintfW(msg, L"界面缩放 %d%%", (int)(after * 100.0 + 0.5));
-    ui::ShowToast(hwnd_, msg, color::Primary, 0xE8A3 /* Zoom */);
+    ui::ShowToast(hwnd_, msg, color::Accent, 0xE8A3 /* Zoom */);
 }
 
 void AppWindow::ApplyWin11Style() {
@@ -772,15 +783,17 @@ void AppWindow::ApplyWin11Style() {
     auto set = reinterpret_cast<FnAttr>(GetProcAddress(dwm, "DwmSetWindowAttribute"));
     if (!set) return;
 
-    const bool dark = d::CurrentTheme()->dark;
+    const bool dark = d::CurrentTheme()->Dark;
     BOOL darkFlag = dark ? TRUE : FALSE;
     set(hwnd_, 20 /* DWMWA_USE_IMMERSIVE_DARK_MODE */, &darkFlag, sizeof(darkFlag));
     set(hwnd_, 19 /* 旧版同一属性 */, &darkFlag, sizeof(darkFlag));
 
     // 明确指定标题栏配色：系统处于深色模式时也不会得到一条黑色标题栏
-    COLORREF cap = d::CurrentTheme()->pal.caption;
-    COLORREF txt = d::CurrentTheme()->pal.text;
-    COLORREF brd = d::CurrentTheme()->pal.border;
+    // （v2.17：Cap/CapText/Hairline 角色令牌，随主题即时刷新）
+    const d::ThemeTokens* t = d::CurrentTheme();
+    COLORREF cap = t->Cap;
+    COLORREF txt = t->CapText;
+    COLORREF brd = t->Hairline;
     set(hwnd_, 35 /* DWMWA_CAPTION_COLOR */, &cap, sizeof(cap));
     set(hwnd_, 36 /* DWMWA_TEXT_COLOR */, &txt, sizeof(txt));
     set(hwnd_, 34 /* DWMWA_BORDER_COLOR */, &brd, sizeof(brd));
@@ -791,20 +804,21 @@ void AppWindow::ApplyWin11Style() {
 
 // 滚动条 / 进度条颜色随主题（chrome 类资源不跟随令牌系统）
 void AppWindow::ApplyChromeTheme() {
-    bool dark = d::CurrentTheme()->dark;
+    bool dark = d::CurrentTheme()->Dark;
     const wchar_t* sb = dark ? L"DarkMode_Explorer" : L"Explorer";
     for (HWND c : { nav_, list_, header_, logView_, pathEdit_, targetEdit_,
                     fieldEdits_[0], fieldEdits_[1], fieldEdits_[2], fieldEdits_[3],
                     searchEdit_ })
         if (c) SetWindowTheme(c, sb, nullptr);
     if (list_) {
-        ListView_SetBkColor(list_, color::Surface);
-        ListView_SetTextBkColor(list_, color::Surface);
+        ListView_SetBkColor(list_, color::Canvas);
+        ListView_SetTextBkColor(list_, color::Canvas);
         ListView_SetTextColor(list_, color::Text);
     }
     if (progress_) {
-        SendMessageW(progress_, PBM_SETBARCOLOR, 0, (LPARAM)color::Primary);
-        SendMessageW(progress_, PBM_SETBKCOLOR, 0, (LPARAM)color::BorderSoft);
+        // 进度条 = 金信号（墨底/纸底唯一允许的大面积彩色），底轨 Panel2
+        SendMessageW(progress_, PBM_SETBARCOLOR, 0, (LPARAM)color::Gold);
+        SendMessageW(progress_, PBM_SETBKCOLOR, 0, (LPARAM)color::Hover);
         ShowWindow(progress_, busy_ ? SW_SHOW : SW_HIDE);
     }
 }
@@ -1449,7 +1463,8 @@ void AppWindow::OnWorkDone() {
         wstring t = result_.summary;
         if (t.size() > 56) t = t.substr(0, 56) + L"…";
         if (!t.empty())
-            ui::ShowToast(hwnd_, t, lastUndo_ ? color::Cyan : color::Primary,
+            // Toast 语义映射：还原/回退 → GoldText（信号），完成 → ChIn（进）
+            ui::ShowToast(hwnd_, t, lastUndo_ ? color::GoldText : color::ChIn,
                           lastUndo_ ? 0xE72C : 0xE73E);
     }
 
@@ -1751,19 +1766,30 @@ void AppWindow::Paint() {
     ui::DoubleBuffer db;
     HDC mem = db.Begin(dc, rc);
     if (mem) {
-        FillSolid(mem, rc, color::Bg);
+        FillSolid(mem, rc, color::Canvas);
         DrawSidebar(mem, RECT{ 0, 0, dpi::S(size::SidebarWidth),
                                rc.bottom - dpi::S(size::StatusH) });
         DrawHeader(mem, RECT{ dpi::S(size::SidebarWidth), 0, rc.right,
                               dpi::S(size::HeaderH) });
 
-        // 输入框外框：系统 EDIT 只画文字，圆角容器由这里补上
+        // 输入框外框：系统 EDIT 只画文字，圆角容器由这里补上。
+        // 焦点环 = Accent 两档线宽中的强调档（手册：选中态/焦点环）。
+        HWND focused = GetFocus();
         for (const RECT& f : { rcFieldPath_, rcFieldTarget_ }) {
             if (f.right <= f.left) continue;
-            ui::FillRoundRect(mem, f, dpi::S(d::radius::Field), color::Surface);
-            ui::StrokeRoundRect(mem, f, dpi::S(d::radius::Field), color::Border);
+            ui::FillRoundRect(mem, f, dpi::S(d::radius::Card), color::Canvas);
+            bool isFocus = focused &&
+                (PtInRect(&f, POINT{ (f.left + f.right) / 2,
+                                     (f.top + f.bottom) / 2 }));
+            if (isFocus) {
+                RECT fi = f;
+                InflateRect(&fi, -dpi::S(2), -dpi::S(2));
+                ui::StrokeRoundRect(mem, fi, dpi::S(d::radius::Card), color::Accent, 2);
+            } else {
+                ui::StrokeRoundRect(mem, f, dpi::S(d::radius::Card), color::Hairline, 1);
+            }
         }
-        // 扩展字段：左侧标签 + 同款圆角输入容器（v2.12 R3）
+        // 扩展字段：左侧标签 + 同款圆角输入容器
         const int LABELW = dpi::S(150);
         for (int i = 0; i < kMaxFields; ++i) {
             const RECT& f = rcFieldExtra_[i];
@@ -1773,9 +1799,9 @@ void AppWindow::Paint() {
                          RECT{ f.left - LABELW + dpi::S(4), f.top, f.left - dpi::S(6), f.bottom },
                          DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX |
                              DT_END_ELLIPSIS,
-                         color::TextSub, ui::res::Body);
-            ui::FillRoundRect(mem, f, dpi::S(d::radius::Field), color::Surface);
-            ui::StrokeRoundRect(mem, f, dpi::S(d::radius::Field), color::Border);
+                         color::Text2, ui::res::Body);
+            ui::FillRoundRect(mem, f, dpi::S(d::radius::Card), color::Canvas);
+            ui::StrokeRoundRect(mem, f, dpi::S(d::radius::Card), color::Hairline, 1);
         }
 
         DrawDataCard(mem);
@@ -1791,8 +1817,9 @@ void AppWindow::Paint() {
 void AppWindow::DrawDataCard(HDC dc) {
     if (rcCard_.right <= rcCard_.left || rcCard_.bottom <= rcCard_.top) return;
 
-    ui::FillRoundRect(dc, rcCard_, dpi::S(d::radius::Card), color::Surface);
-    ui::StrokeRoundRect(dc, rcCard_, dpi::S(d::radius::Card), color::Border);
+    // 卡片：Canvas 底 + Hairline 描边 + 圆角 12（VI 卡片规格）
+    ui::FillRoundRect(dc, rcCard_, dpi::S(d::radius::Card), color::Canvas);
+    ui::StrokeRoundRect(dc, rcCard_, dpi::S(d::radius::Card), color::Hairline);
 
     auto section = [&](const RECT& r, const wchar_t* title, const wchar_t* right,
                        COLORREF rightColor) {
@@ -1815,49 +1842,53 @@ void AppWindow::DrawDataCard(HDC dc) {
         wsprintfW(count, L"%s", T(L"暂无数据"));
     }
 
-    section(rcCardList_, T(L"扫描结果"), count, color::TextFaint);
+    section(rcCardList_, T(L"扫描结果"), count, color::Text3);
 
     const wchar_t* logRight = busy_ ? T(L"运行中 · Esc 可停止") : T(L"就绪");
     section(rcCardLog_, T(L"运行日志"), logRight,
-            busy_ ? color::Primary : color::TextFaint);
+            busy_ ? color::Accent : color::Text3);
 
     // 日志段上方的细分隔线
     int sepY = rcCardLog_.top - dpi::S(9);
     RECT sep = { rcCard_.left + dpi::S(space::L), sepY,
                  rcCard_.right - dpi::S(space::L), sepY + 1 };
-    FillSolid(dc, sep, color::BorderSoft);
+    FillSolid(dc, sep, color::Hairline);
 }
 
 void AppWindow::DrawSidebar(HDC dc, const RECT& rc) {
-    FillSolid(dc, rc, color::Sidebar);
+    FillSolid(dc, rc, color::Side);
     RECT line = { rc.right - 1, rc.top, rc.right, rc.bottom };
-    FillSolid(dc, line, color::BorderSoft);
+    FillSolid(dc, line, color::Hairline);
 
     const int SB = rc.right;
     const int PADX = dpi::S(18);
 
-    // ---- 品牌区：方块 Logo + 产品名 + 英文标识 ----
-    RECT logo = { PADX, dpi::S(18), PADX + dpi::S(34), dpi::S(52) };
-    ui::FillRoundRect(dc, logo, dpi::S(10), color::Primary);
-    ui::DrawGlyphCentered(dc, 0xE968, logo, color::OnPrimary, ui::res::Icon);
+    // ---- 品牌区：蝶形角标（变体 A / 墨暗 C）+ 产品名 + 英文标识 ----
+    {
+        RECT logo = { PADX, dpi::S(16), PADX + dpi::S(54), dpi::S(52) };
+        brand::DrawButterfly(dc, logo,
+                             d::CurrentTheme()->Dark ? brand::MarkVariant::ReverseC
+                                                     : brand::MarkVariant::FullA,
+                             *d::CurrentTheme());
+    }
 
     ui::DrawText(dc, d::brand::kAppNameCn,
-                 RECT{ PADX + dpi::S(46), dpi::S(15), SB - dpi::S(10), dpi::S(39) },
+                 RECT{ PADX + dpi::S(62), dpi::S(15), SB - dpi::S(10), dpi::S(39) },
                  DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
                  color::Text, ui::res::Title);
     ui::DrawText(dc, d::brand::kAppNameEn,
-                 RECT{ PADX + dpi::S(46), dpi::S(39), SB - dpi::S(10), dpi::S(57) },
+                 RECT{ PADX + dpi::S(62), dpi::S(39), SB - dpi::S(10), dpi::S(57) },
                  DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                 color::TextFaint, ui::res::Small);
+                 color::Text2, ui::res::Small);
 
-    // ---- 搜索框（自绘圆角容器，EDIT 在容器内部透明贴合）----
+    // ---- 搜索框（自绘圆角容器 Panel2 底，EDIT 在容器内部透明贴合）----
     RECT field = { dpi::S(16), dpi::S(size::SidebarHeader) + dpi::S(2),
                    SB - dpi::S(16), dpi::S(size::SidebarHeader) + dpi::S(40) };
-    ui::FillRoundRect(dc, field, dpi::S(d::radius::Field), color::SurfaceHi);
+    ui::FillRoundRect(dc, field, dpi::S(d::radius::Card), color::Hover);
     RECT gi = { field.left + dpi::S(10), field.top, field.left + dpi::S(30), field.bottom };
-    ui::DrawGlyphCentered(dc, 0xE721, gi, color::TextFaint, ui::res::Icon);
+    ui::DrawGlyphCentered(dc, 0xE721, gi, color::Text2, ui::res::Icon);
 
-    // ---- 导航滚动指示（系统滚动条太粗，这里用 3px 细条）----
+    // ---- 导航滚动指示（系统滚动条太粗，这里用 3px 细条 Hairline）----
     int totalH = 0;
     for (const auto& e : navs_)
         totalH += dpi::S(e.isGroup ? size::NavGroup : size::NavItem);
@@ -1873,12 +1904,12 @@ void AppWindow::DrawSidebar(HDC dc, const RECT& rc) {
         int maxOffset = totalH - viewH;
         int ty = rcNav_.top + (maxOffset > 0 ? span * std::min(offset, maxOffset) / maxOffset : 0);
         RECT t = { SB - dpi::S(7), ty, SB - dpi::S(3), ty + thumbH };
-        ui::FillRoundRect(dc, t, dpi::S(2), color::Border);
+        ui::FillRoundRect(dc, t, dpi::S(2), color::Hairline);
     }
 }
 
 void AppWindow::DrawHeader(HDC dc, const RECT& rc) {
-    FillSolid(dc, rc, color::Bg);
+    FillSolid(dc, rc, color::Canvas);
     IModule* m = CurModule();
     const int PAD = dpi::S(space::XXL);
     const int left = rc.left + PAD;
@@ -1887,16 +1918,17 @@ void AppWindow::DrawHeader(HDC dc, const RECT& rc) {
 
     if (m) {
         const wstring title = Tx(m->Title() ? m->Title() : L"");
+        // 模块页题 = 标题档 22/700（40px Display 只给关于页/闪屏）
         ui::DrawText(dc, title.c_str(),
-                     RECT{ left, dpi::S(16), rightEdge, dpi::S(54) },
+                     RECT{ left, dpi::S(14), rightEdge, dpi::S(50) },
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS,
-                     color::Text, ui::res::PageTitle);
+                     color::Text, ui::res::Title);
 
-        // 标题右侧的分组标签：用主色给页头一点色彩锚点，同时说明功能归属
+        // 标题右侧的分组标签：AccentSoft 胶囊给页头一点色彩锚点
         const wstring group = Tx(m->Group() ? m->Group() : L"");
         if (!group.empty()) {
             SIZE ts{};
-            { ui::Selected sel(dc, ui::res::PageTitle);
+            { ui::Selected sel(dc, ui::res::Title);
               GetTextExtentPoint32W(dc, title.c_str(), (int)title.size(), &ts); }
             SIZE gs{};
             { ui::Selected sel(dc, ui::res::Small);
@@ -1904,42 +1936,44 @@ void AppWindow::DrawHeader(HDC dc, const RECT& rc) {
             int chipX = left + std::min<int>(ts.cx, rightEdge - left - dpi::S(40)) + dpi::S(12);
             int chipW = gs.cx + dpi::S(20);
             if (chipX + chipW < rightEdge) {
-                RECT chip = { chipX, dpi::S(25), chipX + chipW, dpi::S(49) };
-                ui::FillRoundRect(dc, chip, dpi::S(12), color::PrimarySoft);
+                RECT chip = { chipX, dpi::S(24), chipX + chipW, dpi::S(46) };
+                ui::FillRoundRect(dc, chip, dpi::S(d::radius::Pill), color::AccentSoft);
                 ui::DrawText(dc, group.c_str(), chip,
                              DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                             color::Primary, ui::res::Small);
+                             color::Text2, ui::res::Small);
             }
         }
 
+        // 引言 = 18/500（Lead 档）
         ui::DrawText(dc, Tx(m->Description() ? m->Description() : L"").c_str(),
-                     RECT{ left, dpi::S(54), rightEdge, dpi::S(80) },
+                     RECT{ left, dpi::S(54), rightEdge, dpi::S(82) },
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS,
-                     color::TextSub, ui::res::Small);
+                     color::Text2, ui::res::Lead);
     }
 
-    // ---- 权限状态胶囊（替代整条横幅：信息在，视觉噪音没了）----
+    // ---- 权限状态胶囊（通道色语义：管理员 = ChIn 进，标准 = GoldText 信号）----
     const bool elev = IsElevated();
     RECT chip = rcElevChip_;
     if (chip.right > chip.left) {
+        COLORREF dotC = elev ? color::ChIn : color::GoldText;
         ui::FillRoundRect(dc, chip, dpi::S(d::radius::Pill),
-                          elev ? color::OkSoft : color::WarnSoft);
+                          BlendColor(dotC, color::Canvas, 880));
         int cy = (chip.top + chip.bottom) / 2;
         int r = dpi::S(3);
         RECT dot = { chip.left + dpi::S(12), cy - r, chip.left + dpi::S(12) + r * 2, cy + r };
-        ui::FillRoundRect(dc, dot, r, elev ? color::Ok : color::Warn);
+        ui::FillRoundRect(dc, dot, r, dotC);
         ui::DrawText(dc, elev ? T(L"管理员模式") : T(L"标准用户"),
                      RECT{ chip.left + dpi::S(24), chip.top,
                            chip.right - dpi::S(10), chip.bottom },
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                     elev ? color::Ok : color::Warn, ui::res::Small);
+                     dotC, ui::res::Small);
     }
 }
 
 void AppWindow::DrawStatusBar(HDC dc, const RECT& rc) {
-    FillSolid(dc, rc, color::Surface);
+    FillSolid(dc, rc, color::Canvas);
     RECT line = { rc.left, rc.top, rc.right, rc.top + 1 };
-    FillSolid(dc, line, color::BorderSoft);
+    FillSolid(dc, line, color::Hairline);
 
     const int PAD = dpi::S(space::XXL);
     // 左：版本与出品（与侧栏同宽，视觉上延续成一列）
@@ -1948,7 +1982,7 @@ void AppWindow::DrawStatusBar(HDC dc, const RECT& rc) {
                       d::brand::kPublisher).c_str(),
                  RECT{ dpi::S(18), rc.top, dpi::S(size::SidebarWidth) - dpi::S(10), rc.bottom },
                  DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS,
-                 color::TextFaint, ui::res::Small);
+                 color::Text3, ui::res::Small);
 
     wstring sum = result_.summary;
     if (!result_.hint.empty()) {
@@ -1960,7 +1994,7 @@ void AppWindow::DrawStatusBar(HDC dc, const RECT& rc) {
     ui::DrawText(dc, sum.c_str(),
                  RECT{ sb + PAD, rc.top, rc.right - dpi::S(360), rc.bottom },
                  DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS,
-                 color::TextSub, ui::res::Small);
+                 color::Text2, ui::res::Small);
 
     wchar_t right[192];
     int pct = (int)(dpi::UserScale() * 100.0 + 0.5);
@@ -1970,7 +2004,7 @@ void AppWindow::DrawStatusBar(HDC dc, const RECT& rc) {
     ui::DrawText(dc, right,
                  RECT{ rc.right - dpi::S(360), rc.top, rc.right - PAD, rc.bottom },
                  DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                 color::TextFaint, ui::res::Small);
+                 color::Text3, ui::res::Small);
 }
 
 void AppWindow::DrawNavItem(const DRAWITEMSTRUCT* d) {
@@ -1979,16 +2013,15 @@ void AppWindow::DrawNavItem(const DRAWITEMSTRUCT* d) {
     bool sel = (d->itemID == (UINT)SendMessageW(nav_, LB_GETCURSEL, 0, 0));
     bool hover = ((int)d->itemID == hoverNav_);   // v2.9 T01：组头也响应悬停
 
-    FillSolid(d->hDC, d->rcItem, color::Sidebar);
+    FillSolid(d->hDC, d->rcItem, color::Side);
 
     if (e.isGroup) {
-        // 组头 = 导航骨架（v2.9 T01）：17px 半粗正文色（原 SmallStrong 14px 灰字），
-        // 右侧 chevron 指示展开方向，整行可点击（展开/收起）
+        // 组头 = 导航骨架：正文半粗 + chevron 指示展开方向，整行可点击
         if (hover || sel) {
             RECT pillRc = { dpi::S(10), d->rcItem.top + dpi::S(2),
                             d->rcItem.right - dpi::S(4), d->rcItem.bottom - dpi::S(2) };
-            ui::FillRoundRect(d->hDC, pillRc, dpi::S(8),
-                              hover ? color::SidebarHi : color::PrimarySoft);
+            ui::FillRoundRect(d->hDC, pillRc, dpi::S(d::radius::Pill),
+                              hover ? color::Hover : color::AccentSoft);
         }
         RECT gr = { d->rcItem.left + dpi::S(22), d->rcItem.top,
                     d->rcItem.right - dpi::S(32), d->rcItem.bottom };
@@ -1999,78 +2032,80 @@ void AppWindow::DrawNavItem(const DRAWITEMSTRUCT* d) {
         wchar_t ch = IsNavGroupOpen(e.group) ? 0xE70D : 0xE76C;
         RECT cr = { d->rcItem.right - dpi::S(28), d->rcItem.top,
                     d->rcItem.right - dpi::S(10), d->rcItem.bottom };
-        ui::DrawGlyphCentered(d->hDC, ch, cr, color::TextSub, ui::res::IconSm);
+        ui::DrawGlyphCentered(d->hDC, ch, cr, color::Text2, ui::res::IconSm);
         return;
     }
 
-    // 选中：柔和的整块底色（不再用左侧竖条，视觉更整体）
+    // 选中 = Accent 胶囊（wing / 墨底 wing_on_ink），文字 OnAccent；
+    // 悬停 = Hover 面轻染。
     if (sel || hover) {
         int t = sel ? (selAnim_ * 3 / 4 + 250) : 300;
         if (t > 1000) t = 1000;
-        COLORREF pill = ui::BlendColor(color::Sidebar,
-                                       sel ? color::PrimarySoft : color::SidebarHi, t);
+        COLORREF pill = sel ? BlendColor(color::Side, color::Accent, t)
+                            : BlendColor(color::Side, color::Hover, t);
         RECT pillRc = { dpi::S(10), d->rcItem.top + dpi::S(2),
                         d->rcItem.right - dpi::S(4), d->rcItem.bottom - dpi::S(2) };
-        ui::FillRoundRect(d->hDC, pillRc, dpi::S(8), pill);
+        ui::FillRoundRect(d->hDC, pillRc, dpi::S(d::radius::Pill), pill);
     }
 
     wchar_t glyph = PickIcon(mods_[e.moduleIndex]);
     RECT ir = { d->rcItem.left + dpi::S(22), d->rcItem.top,
                 d->rcItem.left + dpi::S(42), d->rcItem.bottom };
     ui::DrawGlyphCentered(d->hDC, glyph, ir,
-                          sel ? color::Primary : (hover ? color::Text : color::TextSub),
+                          sel ? color::OnAccent : (hover ? color::Text : color::Text2),
                           ui::res::Icon);
 
     RECT tr = { d->rcItem.left + dpi::S(50), d->rcItem.top,
                 d->rcItem.right - dpi::S(14), d->rcItem.bottom };
     ui::DrawText(d->hDC, e.text.c_str(), tr,
                  DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS,
-                 sel ? color::Primary : color::TextSub,
+                 sel ? color::OnAccent : color::Text2,
                  sel ? ui::res::BodyStrong : ui::res::Body);
 }
 
 void AppWindow::DrawButton(const DRAWITEMSTRUCT* d) {
+    // VI-D2 样式 → 令牌映射在 controls::DrawFluentButton 内固定：
+    // Primary/Danger = BtnFill 墨底反白；Secondary = Hover 面 + Hairline 描边。
     // MDL2 字形：Search / Delete / Undo / Cancel / Check / Clear / Color / Info
     switch (d->CtlID) {
     case ID_BTN_RUN:   ui::DrawFluentButton(d, ui::ButtonStyle::Primary,
-                                            color::Primary, 0xE721); break;
+                                            color::Accent, 0xE721, color::Canvas); break;
     case ID_BTN_CLEAN: {
-        // 模块可声明危险态（如「卸载选中」→ 红色按钮）；否则 Tweaks 用主色
+        // 模块可声明危险态（如「卸载选中」）；VI 纪律下危险确认仍 = 墨底反白
         IModule* cm = CurModule();
-        if (cm && cm->ApplyIsDanger())
-            ui::DrawFluentButton(d, ui::ButtonStyle::Danger,
-                                 color::Danger, 0xE74D);
-        else if (cm && cm->Kind() == ModuleKind::Tweaks)
+        if (cm && cm->Kind() == ModuleKind::Tweaks)
             ui::DrawFluentButton(d, ui::ButtonStyle::Primary,
-                                 color::Primary, 0xE73E);
+                                 color::Accent, 0xE73E, color::Canvas);
         else
             ui::DrawFluentButton(d, ui::ButtonStyle::Danger,
-                                 color::Danger, 0xE74D);
+                                 color::Accent, 0xE74D, color::Canvas);
         break;
     }
     case ID_BTN_UNDO:  ui::DrawFluentButton(d, ui::ButtonStyle::Secondary,
-                                            color::Cyan, 0xE72C); break;
+                                            color::ChIn, 0xE72C, color::Canvas); break;
     case ID_BTN_MORE:  ui::DrawFluentButton(d, ui::ButtonStyle::Secondary,
-                                            color::Primary, 0xE70D /* ChevronDown */); break;
+                                            color::Accent, 0xE70D /* ChevronDown */,
+                                            color::Canvas); break;
     case ID_BTN_STOP:  ui::DrawFluentButton(d, ui::ButtonStyle::Secondary,
-                                            color::Danger, 0xE8BB); break;
+                                            color::ChErr, 0xE8BB, color::Canvas); break;
     case ID_BTN_ALL:   ui::DrawFluentButton(d, ui::ButtonStyle::Secondary,
-                                            color::Primary, 0xE73E); break;
+                                            color::Accent, 0xE73E, color::Canvas); break;
     case ID_BTN_NONE:  ui::DrawFluentButton(d, ui::ButtonStyle::Secondary,
-                                            color::Primary, 0xE894); break;
+                                            color::Accent, 0xE894, color::Canvas); break;
     case ID_BTN_ADMIN: ui::DrawFluentButton(d, ui::ButtonStyle::Secondary,
-                                            color::Warn, 0xE7EF); break;
-    case ID_BTN_THEME: ui::DrawIconButton(d, 0xE790, color::Bg); break;
-    case ID_BTN_LANG:  ui::DrawIconButton(d, 0xE8C1 /* World */, color::Bg); break;
-    case ID_BTN_ABOUT: ui::DrawIconButton(d, 0xE946, color::Bg); break;
+                                            color::GoldText, 0xE7EF, color::Canvas); break;
+    case ID_BTN_THEME: ui::DrawIconButton(d, 0xE790, color::Canvas, color::Text2); break;
+    case ID_BTN_LANG:  ui::DrawIconButton(d, 0xE8C1 /* World */, color::Canvas,
+                                          color::Text2); break;
+    case ID_BTN_ABOUT: ui::DrawIconButton(d, 0xE946, color::Canvas, color::Text2); break;
     case ID_SEARCH_CLEAR: ui::DrawSearchClearButton(d); break;
     case ID_NAV_EXPAND:   // 侧栏辅助小按钮：Ghost 样式融入侧栏底色
-        ui::DrawFluentButton(d, ui::ButtonStyle::Ghost, color::Primary, 0xE70D,
-                             color::Sidebar);
+        ui::DrawFluentButton(d, ui::ButtonStyle::Ghost, color::Accent, 0xE70D,
+                             color::Side);
         break;
     case ID_NAV_COLLAPSE:
-        ui::DrawFluentButton(d, ui::ButtonStyle::Ghost, color::Primary, 0xE70E,
-                             color::Sidebar);
+        ui::DrawFluentButton(d, ui::ButtonStyle::Ghost, color::Accent, 0xE70E,
+                             color::Side);
         break;
     default:           ui::DrawFluentButton(d, ui::ButtonStyle::Ghost); break;
     }
@@ -2081,40 +2116,44 @@ LRESULT AppWindow::ListCustomDraw(LPARAM lp) {
     switch (cd->nmcd.dwDrawStage) {
     case CDDS_PREPAINT: {
         RECT rc; GetClientRect(list_, &rc);
-        FillSolid(cd->nmcd.hdc, rc, color::Surface);
-        if (header_) {   // 空状态要避开表头，否则图标的圆底会被表头压掉一截
+        FillSolid(cd->nmcd.hdc, rc, color::Canvas);
+        if (header_) {   // 空状态要避开表头，否则图形会被表头压掉一截
             RECT hr = {};
             if (GetWindowRect(header_, &hr)) rc.top += hr.bottom - hr.top;
         }
         if (ListView_GetItemCount(list_) == 0) {
-            // 空状态：柔和圆底图标 + 一句主提示 + 一句操作提示
+            // v2.17 品牌化空/错误态：线稿走线 + 未画完焊盘（错误态断线，
+            // 不上红）；模块差异只保留一句操作提示。
             IModule* m = CurModule();
             const bool action = m && (m->Kind() == ModuleKind::Action ||
                                       m->Kind() == ModuleKind::Console);
             const wchar_t* tip = action ? T(L"点击上方「执行」运行该功能")
                                         : T(L"点击上方「开始扫描」获取当前模块的数据");
-            wchar_t glyph = action ? 0xE768 : 0xE721;
-            const int cx = (rc.left + rc.right) / 2;
-            const int cy = (rc.top + rc.bottom) / 2;
-            const int box = dpi::S(64);
-            RECT cir = { cx - box / 2, cy - dpi::S(76), cx + box / 2, cy - dpi::S(12) };
-            ui::FillRoundRect(cd->nmcd.hdc, cir, box / 2, color::PrimarySoft);
-            ui::DrawGlyphCentered(cd->nmcd.hdc, glyph, cir, color::Primary, ui::res::IconLg);
-            ui::DrawText(cd->nmcd.hdc, T(L"还没有数据"),
-                         RECT{ rc.left, cy - dpi::S(6), rc.right, cy + dpi::S(22) },
-                         DT_CENTER | DT_SINGLELINE | DT_NOPREFIX,
-                         color::Text, ui::res::BodyStrong);
+            // 错误路径（无 winget / 非管理员 / 超时等）：hint/summary 带失败
+            // 语义时切错误态线稿（信号在中途断了）
+            const wstring failBlob = result_.hint + L" " + result_.summary;
+            const bool failed =
+                failBlob.find(L"错误") != wstring::npos ||
+                failBlob.find(L"失败") != wstring::npos ||
+                failBlob.find(L"无法") != wstring::npos ||
+                failBlob.find(L"超时") != wstring::npos ||
+                failBlob.find(L"未找到") != wstring::npos ||
+                failBlob.find(L"不可用") != wstring::npos;
+            if (failed)
+                brand::DrawErrorState(cd->nmcd.hdc, rc, *d::CurrentTheme());
+            else
+                brand::DrawEmptyState(cd->nmcd.hdc, rc, *d::CurrentTheme());
             ui::DrawText(cd->nmcd.hdc, tip,
-                         RECT{ rc.left + dpi::S(20), cy + dpi::S(24),
-                               rc.right - dpi::S(20), cy + dpi::S(52) },
+                         RECT{ rc.left + dpi::S(20), rc.bottom - dpi::S(40),
+                               rc.right - dpi::S(20), rc.bottom - dpi::S(14) },
                          DT_CENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS,
-                         color::TextFaint, ui::res::Small);
+                         color::Text3, ui::res::Small);
             return CDRF_SKIPDEFAULT;
         }
         return CDRF_NOTIFYITEMDRAW;
     }
     case CDDS_ITEMPREPAINT: {
-        // 整行自绘：4 列文字、行分隔线、选中/危险底色全部由这里控制，
+        // 整行自绘：4 列文字、Hairline 行分隔、选中/危险底色全部由这里控制，
         // 不依赖系统 ListView 的主题绘制（深色系统下才不会串色）。
         const int idx = (int)cd->nmcd.dwItemSpec;
         if (idx < 0) return CDRF_SKIPDEFAULT;
@@ -2127,14 +2166,14 @@ LRESULT AppWindow::ListCustomDraw(LPARAM lp) {
         // 会把整张表刷成选中色。直接问控件真实选中状态。
         const bool selected = (ListView_GetItemState(list_, idx, LVIS_SELECTED) &
                                LVIS_SELECTED) != 0;
-        COLORREF bg = color::Surface;
-        if (selected)     bg = color::PrimarySoft;
-        else if (danger)  bg = color::DangerSoft;
+        COLORREF bg = color::Canvas;
+        if (selected)     bg = color::AccentSoft;
+        else if (danger)  bg = color::ChErrSoft;   // 危险行柔底（通道色只归数据层）
         FillSolid(cd->nmcd.hdc, row, bg);
 
         RECT hair = { row.left + dpi::S(14), row.bottom - 1,
                       row.right - dpi::S(14), row.bottom };
-        FillSolid(cd->nmcd.hdc, hair, selected ? color::PrimarySoft : color::BorderSoft);
+        FillSolid(cd->nmcd.hdc, hair, selected ? color::AccentSoft : color::Hairline);
 
         const int cols = header_ ? Header_GetItemCount(header_) : 4;
         IModule* curMod = CurModule();
@@ -2149,19 +2188,22 @@ LRESULT AppWindow::ListCustomDraw(LPARAM lp) {
             ListView_GetItemText(list_, idx, c, buf, 1024);
             RECT tr = { cr.left + dpi::S(14), cr.top, cr.right - dpi::S(14), cr.bottom };
             UINT fmt = DT_SINGLELINE | DT_VCENTER | DT_NOPREFIX | DT_END_ELLIPSIS;
-            fmt |= (c == 1) ? DT_RIGHT : DT_LEFT;
+            fmt |= (c == 1) ? DT_RIGHT : DT_LEFT;   // 数值列右对齐
             COLORREF fg;
-            if (danger)        fg = color::Danger;
+            if (danger)        fg = color::ChErr;
             else if (selected) fg = color::Text;
-            else               fg = (c == 0) ? color::Text : color::TextSub;
-            // 开关型模块：状态列用色区分，扫一眼就知道哪些已开启
+            else               fg = (c == 0) ? color::Text : color::Text2;
+            // 开关型模块：状态列用通道色区分，扫一眼就知道哪些已开启
+            // （Tweaks「已应用」= ChIn、「未应用」= Text3）
             if (tweaks && c == 1 && !danger) {
-                fg = (wcscmp(buf, L"已应用") == 0) ? color::Ok
-                   : (wcscmp(buf, L"未应用") == 0) ? color::TextFaint
+                fg = (wcscmp(buf, L"已应用") == 0) ? color::ChIn
+                   : (wcscmp(buf, L"未应用") == 0) ? color::Text3
                                                    : fg;
             }
-            ui::DrawText(cd->nmcd.hdc, buf, tr, fmt, fg,
-                         c == 0 ? ui::res::BodyStrong : ui::res::Body);
+            // 数值列 = Data 层等宽（JetBrains Mono 回落链），IP/端口天然对齐
+            HFONT colFont = (c == 1) ? ui::res::Mono
+                                     : (c == 0 ? ui::res::BodyStrong : ui::res::Body);
+            ui::DrawText(cd->nmcd.hdc, buf, tr, fmt, fg, colFont);
         }
         return CDRF_SKIPDEFAULT;
     }
@@ -2178,9 +2220,9 @@ LRESULT AppWindow::HeaderCustomDraw(LPARAM lp) {
     case CDDS_ITEMPREPAINT: {
         int col = (int)cd->dwItemSpec;
         RECT rc = cd->rc;
-        FillSolid(cd->hdc, rc, color::SurfaceHi);
+        FillSolid(cd->hdc, rc, color::Hover);
         RECT line = { rc.left, rc.bottom - 1, rc.right, rc.bottom };
-        FillSolid(cd->hdc, line, color::Border);
+        FillSolid(cd->hdc, line, color::Hairline);
 
         const wchar_t* labels[] = { L"名称", L"数值", L"分类", L"详情" };
         bool sorted = (sortCol_ == col);
@@ -2189,11 +2231,11 @@ LRESULT AppWindow::HeaderCustomDraw(LPARAM lp) {
         UINT fmt = DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
         if (col == 1) fmt |= DT_RIGHT;
         ui::DrawText(cd->hdc, T(labels[col]), tr, fmt,
-                     sorted ? color::Primary : color::TextFaint, ui::res::SmallStrong);
+                     sorted ? color::Accent : color::Text2, ui::res::SmallStrong);
         if (sorted) {
             wchar_t arrow = sortAsc_ ? 0xE70E : 0xE70D;  // Chevron Up/Down
             RECT ar = { rc.right - dpi::S(32), rc.top, rc.right - dpi::S(12), rc.bottom };
-            ui::DrawGlyphCentered(cd->hdc, arrow, ar, color::Primary, ui::res::Icon);
+            ui::DrawGlyphCentered(cd->hdc, arrow, ar, color::Accent, ui::res::Icon);
         }
         return CDRF_SKIPDEFAULT;
     }
@@ -2271,10 +2313,10 @@ LRESULT AppWindow::OnCommand(WORD id, WORD code) {
             } else if (er == mz::ElevateResult::Cancelled) {
                 // UAC 被取消：不再静默，Toast 明确告知当前仍为标准用户
                 ui::ShowToast(hwnd_, L"已取消提权，继续以标准用户权限运行",
-                              color::Warn, 0xE7EF /* Admin shield */);
+                              color::GoldText, 0xE7EF /* Admin shield */);
             } else {
                 ui::ShowToast(hwnd_, L"提权失败，请右键「以管理员身份运行」",
-                              color::Danger, 0xE783 /* Error */);
+                              color::ChErr, 0xE783 /* Error */);
             }
         }
         break;
@@ -2295,7 +2337,7 @@ LRESULT AppWindow::OnCommand(WORD id, WORD code) {
         BuildNav();                  // 分组与模块标题按新语言重建
         InvalidateRect(hwnd_, nullptr, TRUE);
         ui::ShowToast(hwnd_, wstring(L"\xE8C1  ") + lang::NameOf(next),
-                      color::Primary, 0);
+                      color::Accent, 0);
         break;
     }
     }
@@ -2372,14 +2414,14 @@ LRESULT AppWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
                 if (ai >= 2 && ai - 2 < (int)menuItems_.size()) {
                     const ActionMenuItem& it = menuItems_[ai - 2];
                     bool hot = (d->itemState & ODS_SELECTED) != 0;
-                    if (hot) FillSolid(d->hDC, d->rcItem, color::PrimarySoft);
-                    else FillSolid(d->hDC, d->rcItem, color::Surface);
+                    if (hot) FillSolid(d->hDC, d->rcItem, color::AccentSoft);
+                    else FillSolid(d->hDC, d->rcItem, color::Canvas);
                     RECT tr = d->rcItem;
                     tr.left += dpi::S(16);
                     ui::DrawText(d->hDC, it.label.c_str(), tr,
                                  DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX |
                                      DT_END_ELLIPSIS,
-                                 it.danger ? color::Danger : color::Text,
+                                 it.danger ? color::ChErr : color::Text,
                                  ui::res::Body);
                     return TRUE;
                 }
@@ -2394,24 +2436,24 @@ LRESULT AppWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     case WM_CTLCOLORSTATIC: {
         HDC dc = (HDC)wp;
         SetBkMode(dc, TRANSPARENT);
-        SetTextColor(dc, color::TextFaint);
+        SetTextColor(dc, color::Text3);
         return (LRESULT)bSide_;
     }
     case WM_CTLCOLOREDIT: {
         HDC dc = (HDC)wp;
         SetBkMode(dc, OPAQUE);
         if ((HWND)lp == searchEdit_) {
-            SetBkColor(dc, color::SurfaceHi);
+            SetBkColor(dc, color::Hover);
             SetTextColor(dc, color::Text);
             return (LRESULT)bField_;
         }
-        SetBkColor(dc, color::Surface);
+        SetBkColor(dc, color::Canvas);
         SetTextColor(dc, color::Text);
         return (LRESULT)bSurface_;
     }
     case WM_CTLCOLORLISTBOX: {
         HDC dc = (HDC)wp;
-        SetBkColor(dc, color::Sidebar);
+        SetBkColor(dc, color::Side);
         SetTextColor(dc, color::Text);
         return (LRESULT)bSide_;
     }
@@ -2466,17 +2508,16 @@ LRESULT AppWindow::WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
             return 0;
         }
         if (wp == 'T' && (GetKeyState(VK_CONTROL) & 0x8000)) {
-            // Ctrl+T：按内置顺序循环切换主题
-            constexpr int kCount = (int)(sizeof(d::Themes::kAll) /
-                                         sizeof(d::Themes::kAll[0]));
+            // Ctrl+T：纸亮 ⇄ 墨暗 双主题循环
+            constexpr int kCount = (int)(sizeof(d::kAll) / sizeof(d::kAll[0]));
             int idx = 0;
             for (int i = 0; i < kCount; ++i) {
-                if (d::Themes::kAll[i] == d::CurrentTheme()) { idx = i; break; }
+                if (d::kAll[i] == d::CurrentTheme()) { idx = i; break; }
             }
-            const d::Theme* next = d::Themes::kAll[(idx + 1) % kCount];
+            const d::ThemeTokens* next = d::kAll[(idx + 1) % kCount];
             d::ApplyTheme(next);
-            ui::ShowToast(hwnd_, L"主题：" + wstring(next->name),
-                          color::Primary, 0xE790);
+            ui::ShowToast(hwnd_, T(L"主题：") + wstring(next->name),
+                          color::Accent, 0xE790);
             return 0;
         }
         break;

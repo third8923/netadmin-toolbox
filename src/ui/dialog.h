@@ -56,7 +56,7 @@ bool ConfirmDialog(HWND host, const std::wstring& title, const std::wstring& bod
 // 关于对话框
 void AboutDialog(HWND host, int moduleCount);
 
-// 主题选择对话框（4 套主题卡片，点击即切换并持久化）
+// 主题选择对话框（VI-D2 双主题：纸亮 / 墨暗 2 卡，点击即切换并持久化）
 void ThemePickerDialog(HWND host);
 
 } // namespace ui

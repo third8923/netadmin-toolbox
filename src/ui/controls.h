@@ -22,16 +22,19 @@ enum class ButtonStyle { Primary, Secondary, Ghost, Danger };
 
 // 全应用共享资源（AppWindow 启动时初始化一次）
 namespace res {
-extern HFONT Body;    // 正文 17
-extern HFONT BodyStrong;  // 正文半粗（卡片段标题）
-extern HFONT Small;   // 辅助 14
-extern HFONT SmallStrong;  // 分组标题/列头 13 半粗
-extern HFONT Title;   // 标题 18 半粗
-extern HFONT PageTitle;  // 页面标题 24
-extern HFONT Mono;    // 控制台 14
-extern HFONT Icon;    // Segoe MDL2 字形 19
-extern HFONT IconSm;  // 小号字形 14（内联徽标）
-extern HFONT IconLg;  // 大号字形 28
+extern HFONT Body;        // 正文 16 / 400（YaHei UI）
+extern HFONT BodyStrong;  // 正文 16 / 700（强调用字重不用斜体）
+extern HFONT Small;       // 标签 14.5 / 500（Label 档，走 S(double)）
+extern HFONT SmallStrong; // 标签 14.5 / 700（列头/分组）
+extern HFONT Title;       // 标题 22 / 700（模块页题 / 卡片标题）
+extern HFONT Lead;        // 引言 18 / 500（页头导语）
+extern HFONT PageTitle;   // 页题 40 / 800（Baloo 2，关于页 Display 档）
+extern HFONT Wordmark;    // 字标 88 / 800（Baloo 2，关于页专用）
+extern HFONT Mono;        // 数据 15 / 400（JetBrains Mono → Cascadia → Consolas）
+extern HFONT MonoStrong;  // 数据 15 / 600
+extern HFONT Icon;        // Segoe MDL2 字形 19
+extern HFONT IconSm;      // 小号字形 14（内联徽标）
+extern HFONT IconLg;      // 大号字形 28
 } // namespace res
 
 void InitResources(UINT dpi);
@@ -41,16 +44,17 @@ void FreeResources();
 void InstallButtonHover(HWND btn);
 
 // 绘制 owner-draw 按钮；glyph != 0 时图标与文字作为一组整体居中。
-// bg 是按钮四周的底色，用来填掉圆角外的四角（不填会在深色主题露出白角）
+// bg 是按钮四周的底色，用来填掉圆角外的四角（不填会露出窗口底色）
+// 样式 → 令牌映射在实现内固定（主键=BtnFill 反白、次级=Hover+Hairline 描边）
 void DrawFluentButton(const DRAWITEMSTRUCT* d, ButtonStyle style,
-                      COLORREF accent = design::color::Primary,
+                      COLORREF accent = design::color::Accent,
                       wchar_t glyph = 0,
-                      COLORREF bg = design::color::Bg);
+                      COLORREF bg = design::color::Canvas);
 
 // 图标按钮：方形、无边框、悬停出浅底（用于窗口右上角的次级入口）
 void DrawIconButton(const DRAWITEMSTRUCT* d, wchar_t glyph,
-                    COLORREF bg = design::color::Surface,
-                    COLORREF accent = design::color::TextSub);
+                    COLORREF bg = design::color::Canvas,
+                    COLORREF accent = design::color::Text2);
 
 // ---------------------------------------------------------------- 搜索框
 // 创建「无边框 EDIT + 清除按钮」组合；父窗口按常规 WM_COMMAND/EN_CHANGE 接收
@@ -67,9 +71,10 @@ void DrawSearchClearButton(const DRAWITEMSTRUCT* d);
 void SetFieldPlaceholder(HWND edit, const wchar_t* text);
 
 // ---------------------------------------------------------------- Toast
-// 右下角浮出通知；accent 决定左侧色条与图标色
+// 右下角浮出通知；accent 决定图标色（语义映射见调用点：完成=ChIn、
+// 还原/警告=GoldText、错误=ChErr、中性=Accent）
 void ShowToast(HWND parent, const std::wstring& text,
-               COLORREF accent = design::color::Primary,
+               COLORREF accent = design::color::Accent,
                wchar_t glyph = 0xE73E /* CheckMark */);
 // 立即关闭当前 Toast（切模块/退出前调用）
 void DismissToast();

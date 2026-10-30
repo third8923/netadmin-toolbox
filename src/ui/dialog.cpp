@@ -1,7 +1,17 @@
+// ============================================================================
+//  模态对话框框架 v2.17（自绘，VI-D2 令牌体系）
+//  ---------------------------------------------------------------------------
+//    * ModalHost        —— 模态宿主：圆角卡片 + 键盘可达（Enter/Esc/Tab）
+//    * ConfirmPage      —— 确认框（危险键 = 墨底反白，不用红）
+//    * AboutPage        —— 关于页：蝶形 + Baloo 2 字标（金点=焊盘）+
+//                          蜕变四态叙事 + OFL 脚注
+//    * ThemePickerPage  —— 主题选择（纸亮 / 墨暗 2 卡，迷你预览）
+// ============================================================================
 #include "ui/dialog.h"
 #include "ui/design.h"
 #include "ui/dpi.h"
 #include "ui/gdi.h"
+#include "ui/brand.h"
 #include "lang.h"
 
 #include <commctrl.h>
@@ -62,7 +72,7 @@ LRESULT CALLBACK ModalWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         st = reinterpret_cast<ModalHost*>(cs->lpCreateParams);
         SetWindowLongPtrW(hwnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(st));
         st->hwnd = hwnd;
-        st->bSurface = CreateSolidBrush(color::Surface);
+        st->bSurface = CreateSolidBrush(color::Canvas);
 
         HINSTANCE hInst = (HINSTANCE)GetWindowLongPtrW(hwnd, GWLP_HINSTANCE);
         auto mkBtn = [&](const wchar_t* t, int id, int w) {
@@ -93,22 +103,24 @@ LRESULT CALLBACK ModalWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         ui::DoubleBuffer db;
         HDC mem = db.Begin(dc, rc);
         if (mem && st) {
-            FillSolid(mem, rc, color::Surface);
-            StrokeRoundRect(mem, rc, dpi::S(d::radius::Card), color::Border, 1);
-            // 标题栏：白底 + 细线，标题 18 半粗
+            FillSolid(mem, rc, color::Canvas);
+            StrokeRoundRect(mem, rc, dpi::S(d::radius::Card), color::Hairline, 1);
+            // 标题栏：同底 + 细线，标题 22/700
             RECT titleRc = { 0, 0, rc.right, dpi::S(60) };
-            FillSolid(mem, titleRc, color::Surface);
-            RECT tl = { dpi::S(24), titleRc.bottom - 1, rc.right - dpi::S(24), titleRc.bottom };
-            FillSolid(mem, tl, color::BorderSoft);
+            FillSolid(mem, titleRc, color::Canvas);
+            RECT tl = { dpi::S(24), titleRc.bottom - 1, rc.right - dpi::S(24),
+                        titleRc.bottom };
+            FillSolid(mem, tl, color::Hairline);
             wchar_t title[128] = { 0 };
             GetWindowTextW(hwnd, title, 128);
-            ui::DrawText(mem, title, RECT{ dpi::S(24), 0, rc.right - dpi::S(64), dpi::S(60) },
+            ui::DrawText(mem, title,
+                         RECT{ dpi::S(24), 0, rc.right - dpi::S(64), dpi::S(60) },
                          DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
                          color::Text, ui::res::Title);
             // 底栏分隔线
             RECT bl = { dpi::S(24), rc.bottom - dpi::S(78), rc.right - dpi::S(24),
                         rc.bottom - dpi::S(78) };
-            FillSolid(mem, bl, color::BorderSoft);
+            FillSolid(mem, bl, color::Hairline);
             st->page->Draw(mem, st->contentRc);
             db.End(dc);
         }
@@ -145,30 +157,33 @@ LRESULT CALLBACK ModalWndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         auto* d = reinterpret_cast<DRAWITEMSTRUCT*>(lp);
         if (!st) break;
         if (d->CtlID == kModalExtra) {
-            ui::DrawFluentButton(d, ui::ButtonStyle::Ghost, color::Primary, 0xE774, color::Surface);
+            ui::DrawFluentButton(d, ui::ButtonStyle::Ghost, color::Accent, 0xE774,
+                                 color::Canvas);
         } else if (d->CtlID == kModalClose) {
             // 关闭按钮：透明底 + ✕ 字形，悬停出圆底
             RECT rc = d->rcItem;
             bool pressed = (d->itemState & ODS_SELECTED) != 0;
             bool hover = GetPropW(d->hwndItem, L"MzBtnHover") != nullptr;
-            FillSolid(d->hDC, rc, color::Surface);
+            FillSolid(d->hDC, rc, color::Canvas);
             if (hover || pressed) {
                 int r = (rc.bottom - rc.top) / 2;
                 int cx = (rc.left + rc.right) / 2;
                 int cy = (rc.top + rc.bottom) / 2;
                 RECT bg = { cx - r, cy - r, cx + r, cy + r };
                 ui::FillRoundRect(d->hDC, bg, r,
-                                  pressed ? color::Border : color::SurfaceHi);
+                                  pressed ? color::Hairline : color::Hover);
             }
-            ui::DrawGlyphCentered(d->hDC, 0xE894, rc, color::TextSub, ui::res::Icon);
+            ui::DrawGlyphCentered(d->hDC, 0xE894, rc, color::Text2, ui::res::Icon);
             return TRUE;
         } else if (d->CtlID == kModalOk && st->opt.dangerOk) {
-            ui::DrawFluentButton(d, ui::ButtonStyle::Danger, color::Primary, 0, color::Surface);
+            // 危险确认主键 = 墨底反白（VI 纪律：红色只归数据层徽标）
+            ui::DrawFluentButton(d, ui::ButtonStyle::Primary, color::Accent, 0,
+                                 color::Canvas);
         } else {
-            // 对话框底是 Surface，不传就会在圆角外露出一圈窗口底色
+            // 对话框底是 Canvas，不传就会在圆角外露出一圈系统灰
             ui::DrawFluentButton(d, d->CtlID == kModalOk ? ui::ButtonStyle::Primary
                                                          : ui::ButtonStyle::Secondary,
-                                 color::Primary, 0, color::Surface);
+                                 color::Accent, 0, color::Canvas);
         }
         return TRUE;
     }
@@ -306,17 +321,18 @@ public:
         : body_(std::move(body)), danger_(danger) {}
 
     void Draw(HDC dc, const RECT& rc) override {
+        // 图标：危险 = 金警示（信号语义，不上红）；普通 = 藤紫信息
         const int box = dpi::S(44);
         RECT cir = { rc.left, rc.top + dpi::S(2), rc.left + box, rc.top + dpi::S(2) + box };
-        ui::FillRoundRect(dc, cir, box / 2,
-                          danger_ ? color::DangerSoft : color::PrimarySoft);
+        ui::FillRoundRect(dc, cir, box / 2, color::AccentSoft);
         ui::DrawGlyphCentered(dc, danger_ ? 0xE7BA : 0xE946, cir,
-                              danger_ ? color::Danger : color::Primary, ui::res::IconLg);
+                              danger_ ? color::GoldText : color::Accent,
+                              ui::res::IconLg);
         RECT tr = { rc.left + box + dpi::S(16), rc.top - dpi::S(2),
                     rc.right, rc.bottom };
         ui::DrawText(dc, body_.c_str(), tr,
                      DT_LEFT | DT_TOP | DT_WORDBREAK | DT_NOPREFIX,
-                     color::TextSub, ui::res::Body);
+                     color::Text2, ui::res::Body);
     }
 
     // 确认/取消/关闭一律关闭对话框（result 已由框架写入）
@@ -349,47 +365,49 @@ class AboutPage : public ModalPage {
 public:
     explicit AboutPage(int moduleCount) : modules_(moduleCount) {}
 
+    void Layout(const RECT& rc) override { rc_ = rc; }
+
     void Draw(HDC dc, const RECT& rc) override {
         int y = rc.top;
 
-        RECT logo = { rc.left, y, rc.left + dpi::S(52), y + dpi::S(52) };
-        HICON ico = LoadIconW(GetModuleHandleW(nullptr), L"APPICON");
-        if (ico) {
-            DrawIconEx(dc, logo.left, logo.top, ico, dpi::S(52), dpi::S(52),
-                       0, nullptr, DI_NORMAL);
-        } else {
-            ui::FillRoundRect(dc, logo, dpi::S(14), color::Primary);
-            ui::DrawGlyphCentered(dc, 0xE968, logo, color::OnPrimary, ui::res::IconLg);
-        }
+        // ---- 蝶形标志（变体 A / 墨暗 C）+ 字标（金点=焊盘，不可拆）----
+        const design::ThemeTokens* t = d::CurrentTheme();
+        RECT mark = { rc.left, y, rc.left + dpi::S(96), y + dpi::S(64) };
+        brand::DrawButterfly(dc, mark,
+                             t->Dark ? brand::MarkVariant::ReverseC
+                                     : brand::MarkVariant::FullA,
+                             *t);
 
-        wstring name = d::brand::kAppNameCn;
-        name += L"   v" + std::to_wstring(k_AppVersionMajor) + L"." +
-                std::to_wstring(k_AppVersionMinor);
-        ui::DrawText(dc, name.c_str(),
-                     RECT{ logo.right + dpi::S(14), y + dpi::S(1), rc.right, y + dpi::S(30) },
-                     DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                     color::Text, ui::res::Title);
+        RECT wm = { rc.left + dpi::S(108), y - dpi::S(4), rc.right, y + dpi::S(26) };
+        brand::DrawWordmark(dc, wm, *t);
         ui::DrawText(dc, d::brand::kAppNameEn,
-                     RECT{ logo.right + dpi::S(15), y + dpi::S(30), rc.right, y + dpi::S(52) },
+                     RECT{ rc.left + dpi::S(110), y + dpi::S(28), rc.right,
+                           y + dpi::S(48) },
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                     color::TextFaint, ui::res::Small);
+                     color::Text2, ui::res::Body);
+        ui::DrawText(dc, d::brand::kPublisherCn,
+                     RECT{ rc.left + dpi::S(110), y + dpi::S(48), rc.right,
+                           y + dpi::S(66) },
+                     DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
+                     color::Text3, ui::res::Small);
 
-        ui::DrawText(dc, L"biohacker.fun 旗舰产品",
-                     RECT{ rc.right - dpi::S(200), y + dpi::S(1), rc.right, y + dpi::S(24) },
+        wchar_t ver[32];
+        wsprintfW(ver, L"v%d.%d", k_AppVersionMajor, k_AppVersionMinor);
+        ui::DrawText(dc, ver,
+                     RECT{ rc.right - dpi::S(90), y, rc.right, y + dpi::S(24) },
                      DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                     color::Primary, ui::res::Small);
+                     color::GoldText, ui::res::Title);
 
-        y += dpi::S(74);
-        ui::FillSolid(dc, RECT{ rc.left, y, rc.right, y + 1 }, color::BorderSoft);
+        y += dpi::S(76);
+        ui::FillSolid(dc, RECT{ rc.left, y, rc.right, y + 1 }, color::Hairline);
 
-        y += dpi::S(16);
+        y += dpi::S(14);
         ui::DrawText(dc, d::brand::kTaglineCn,
                      RECT{ rc.left, y, rc.right, y + dpi::S(22) },
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                     color::TextSub, ui::res::Small);
+                     color::Text2, ui::res::Small);
 
-        y += dpi::S(32);
-        using mz::lang::Tx;
+        y += dpi::S(30);
         wstring m1 = Tx(L"%d 个功能模块，覆盖清理 / 网络 / 系统信息");
         wstring m1s;
         {
@@ -406,23 +424,39 @@ public:
         };
         for (const wchar_t* f : facts) {
             RECT dot = { rc.left, y + dpi::S(1), rc.left + dpi::S(18), y + dpi::S(19) };
-            ui::FillRoundRect(dc, dot, dpi::S(9), color::PrimarySoft);
-            ui::DrawGlyphCentered(dc, 0xE73E, dot, color::Primary, ui::res::IconSm);
+            ui::FillRoundRect(dc, dot, dpi::S(9), color::AccentSoft);
+            ui::DrawGlyphCentered(dc, 0xE73E, dot, color::ChIn, ui::res::IconSm);
             ui::DrawText(dc, f,
                          RECT{ rc.left + dpi::S(28), y, rc.right, y + dpi::S(20) },
                          DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                         color::TextSub, ui::res::Small);
-            y += dpi::S(30);
+                         color::Text2, ui::res::Small);
+            y += dpi::S(28);
         }
 
+        // ---- 蜕变四态叙事（卵 v0.1 → 幼虫 v0.5 → 蛹 v0.9 → 蝶 v1.0）----
+        y += dpi::S(6);
+        // Bug-B1：带底与脚注行（fy = rc.bottom - S(20)）保留 ≥ S(12) 间距
+        const int tlBottom = (y + dpi::S(78) < rc.bottom - dpi::S(32))
+                                 ? y + dpi::S(78)
+                                 : rc.bottom - dpi::S(32);
+        RECT tl = { rc.left, y, rc.right, tlBottom };
+        brand::DrawMorphTimeline(dc, tl, *t);
+
+        // ---- 脚注：MIT / OFL / © ----
+        int fy = rc.bottom - dpi::S(20);
         ui::DrawText(dc, L"MIT License",
-                     RECT{ rc.left, rc.bottom - dpi::S(20), rc.right, rc.bottom },
+                     RECT{ rc.left, fy, rc.left + dpi::S(220), rc.bottom },
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                     color::TextFaint, ui::res::Small);
+                     color::Text3, ui::res::Small);
+        ui::DrawText(dc, T(L"Baloo 2 / JetBrains Mono 以 SIL Open Font License 1.1 子集形式内嵌"),
+                     RECT{ rc.left + dpi::S(220), fy, rc.right - dpi::S(180), rc.bottom },
+                     DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX |
+                         DT_END_ELLIPSIS,
+                     color::Text3, ui::res::Small);
         ui::DrawText(dc, L"© 2026 biohacker.fun",
-                     RECT{ rc.right - dpi::S(220), rc.bottom - dpi::S(20), rc.right, rc.bottom },
+                     RECT{ rc.right - dpi::S(180), fy, rc.right, rc.bottom },
                      DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                     color::TextFaint, ui::res::Small);
+                     color::Text3, ui::res::Small);
     }
 
     bool OnCommand(int id) override {
@@ -439,6 +473,7 @@ public:
 
 private:
     int modules_;
+    RECT rc_ = {};
 };
 
 } // namespace
@@ -448,102 +483,114 @@ void AboutDialog(HWND host, int moduleCount) {
     ModalOptions opt;
     opt.showCancel = false;
     opt.showExtra = true;
-    RunModal(host, T(L"关于"), 640, 400, &page, opt);
+    RunModal(host, T(L"关于"), 640, 464, &page, opt);   // 464：时间线带底与脚注留足间距
 }
 
 // ---------------------------------------------------------------- 主题选择页
 namespace {
 
-// 单张主题卡片：迷你应用预览（侧栏 + 内容卡 + 主色按钮）+ 名称 + 描述。
-// 卡片内的文字一律使用「该主题自己的」文字色，深色卡片上才看得清。
-void DrawThemeCard(HDC dc, const RECT& card, const design::Theme& t,
+// 单张主题卡片：迷你应用预览（侧栏 + 内容卡 + 主键）+ 名称 + 描述。
+// 卡片内的色彩一律使用「该主题自己的」角色令牌，暗色卡片上才看得清。
+void DrawThemeCard(HDC dc, const RECT& card, const design::ThemeTokens& t,
                    bool current, bool hovered) {
-    const design::Palette& p = t.pal;
     const int pad = dpi::S(12);
 
-    ui::FillRoundRect(dc, card, dpi::S(d::radius::Card), p.surface);
+    ui::FillRoundRect(dc, card, dpi::S(d::radius::Card), t.Canvas);
     ui::StrokeRoundRect(dc, card, dpi::S(d::radius::Card),
-                        current ? p.primary : (hovered ? p.textFaint : p.border),
+                        current ? t.Accent : (hovered ? t.Text3 : t.Hairline),
                         current ? 2 : 1);
 
     // ---- 迷你界面预览 ----
-    const int pvH = dpi::S(100);
-    RECT pv = { card.left + pad, card.top + pad, card.right - pad, card.top + pad + pvH };
-    ui::FillRoundRect(dc, pv, dpi::S(8), p.bg);
-    ui::StrokeRoundRect(dc, pv, dpi::S(8), p.border, 1);
+    const int pvH = dpi::S(96);
+    RECT pv = { card.left + pad, card.top + pad, card.right - pad,
+                card.top + pad + pvH };
+    ui::FillRoundRect(dc, pv, dpi::S(8), t.Canvas);
+    ui::StrokeRoundRect(dc, pv, dpi::S(8), t.Hairline, 1);
 
     int sw = (pv.right - pv.left) * 3 / 10;
     RECT sb = { pv.left + 1, pv.top + 1, pv.left + sw, pv.bottom - 1 };
-    ui::FillRoundRect(dc, sb, dpi::S(7), p.sidebar);
-    ui::FillSolid(dc, RECT{ sb.right, sb.top, sb.right + 1, sb.bottom }, p.border);
+    ui::FillRoundRect(dc, sb, dpi::S(7), t.Side);
+    ui::FillSolid(dc, RECT{ sb.right, sb.top, sb.right + 1, sb.bottom }, t.Hairline);
 
-    ui::FillRoundRect(dc, RECT{ sb.left + dpi::S(6), sb.top + dpi::S(7),
-                                sb.left + dpi::S(17), sb.top + dpi::S(18) },
-                      dpi::S(3), p.primary);
-    ui::FillRoundRect(dc, RECT{ sb.left + dpi::S(21), sb.top + dpi::S(9),
-                                sb.left + dpi::S(44), sb.top + dpi::S(14) },
-                      dpi::S(2), p.text);
+    // 侧栏：品牌蝶形角标 + 模块行（第一行选中 = Accent 胶囊）
+    {
+        RECT bf = { sb.left + dpi::S(6), sb.top + dpi::S(5),
+                    sb.left + dpi::S(24), sb.top + dpi::S(19) };
+        brand::DrawButterfly(dc, bf, t.Dark ? brand::MarkVariant::ReverseC
+                                            : brand::MarkVariant::FullA, t);
+    }
     for (int i = 0; i < 4; ++i) {
-        RECT ni = { sb.left + dpi::S(6), sb.top + dpi::S(27) + i * dpi::S(11),
-                    sb.right - dpi::S(6), sb.top + dpi::S(33) + i * dpi::S(11) };
-        ui::FillRoundRect(dc, ni, dpi::S(3), i == 0 ? p.primarySoft : p.sidebarHi);
+        RECT ni = { sb.left + dpi::S(6), sb.top + dpi::S(26) + i * dpi::S(12),
+                    sb.right - dpi::S(6), sb.top + dpi::S(36) + i * dpi::S(12) };
+        ui::FillRoundRect(dc, ni, dpi::S(6),
+                          i == 0 ? t.Accent : (i == 1 ? t.Hover : t.Side));
+        // 选中行补一枚 OnAccent 短条模拟文字
+        if (i == 0)
+            ui::FillRoundRect(dc,
+                              RECT{ ni.left + dpi::S(8), ni.top + dpi::S(3),
+                                    ni.left + dpi::S(26), ni.top + dpi::S(7) },
+                              dpi::S(2), t.OnAccent);
     }
 
     RECT mr = { pv.left + sw + 1, pv.top + 1, pv.right - 1, pv.bottom - 1 };
-    ui::FillSolid(dc, mr, p.bg);
+    ui::FillSolid(dc, mr, t.Canvas);
     ui::FillRoundRect(dc, RECT{ mr.left + dpi::S(8), mr.top + dpi::S(8),
                                 mr.left + dpi::S(58), mr.top + dpi::S(13) },
-                      dpi::S(2), p.text);
-    RECT mc = { mr.left + dpi::S(8), mr.top + dpi::S(21),
+                      dpi::S(2), t.Text);
+    RECT mc = { mr.left + dpi::S(8), mr.top + dpi::S(20),
                 mr.right - dpi::S(8), mr.bottom - dpi::S(8) };
-    ui::FillRoundRect(dc, mc, dpi::S(5), p.surface);
-    ui::StrokeRoundRect(dc, mc, dpi::S(5), p.border, 1);
+    ui::FillRoundRect(dc, mc, dpi::S(5), t.Canvas);
+    ui::StrokeRoundRect(dc, mc, dpi::S(5), t.Hairline, 1);
     for (int i = 0; i < 2; ++i) {
-        ui::FillRoundRect(dc, RECT{ mc.left + dpi::S(6), mc.top + dpi::S(7) + i * dpi::S(8),
+        ui::FillRoundRect(dc, RECT{ mc.left + dpi::S(6), mc.top + dpi::S(6) + i * dpi::S(8),
                                     mc.right - dpi::S(6) - i * dpi::S(18),
-                                    mc.top + dpi::S(11) + i * dpi::S(8) },
-                          dpi::S(2), p.borderSoft);
+                                    mc.top + dpi::S(10) + i * dpi::S(8) },
+                          dpi::S(2), t.Hairline);
     }
-    ui::FillRoundRect(dc, RECT{ mc.left + dpi::S(6), mc.bottom - dpi::S(13),
-                                mc.left + dpi::S(38), mc.bottom - dpi::S(6) },
-                      dpi::S(3), p.primary);
+    // 主按钮（墨底反白胶囊）+ 金色进度线（信号语义）
+    ui::FillRoundRect(dc, RECT{ mc.left + dpi::S(6), mc.bottom - dpi::S(14),
+                                mc.left + dpi::S(40), mc.bottom - dpi::S(6) },
+                      dpi::S(4), t.BtnFill);
+    ui::FillRoundRect(dc, RECT{ mc.right - dpi::S(34), mc.bottom - dpi::S(11),
+                                mc.right - dpi::S(6), mc.bottom - dpi::S(9) },
+                      dpi::S(1), t.Gold);
 
     // ---- 名称 / 当前标记 / 描述 ----
     RECT nr = { card.left + pad, pv.bottom + dpi::S(8), card.right - pad - dpi::S(54),
                 pv.bottom + dpi::S(32) };
-    ui::DrawText(dc, t.name, nr, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                 p.text, ui::res::Title);
+    ui::DrawText(dc, T(t.name), nr,
+                 DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
+                 t.Text, ui::res::Title);
 
-        if (current) {
-            RECT bg = { card.right - pad - dpi::S(50), pv.bottom + dpi::S(9),
-                        card.right - pad, pv.bottom + dpi::S(31) };
-            ui::FillRoundRect(dc, bg, dpi::S(11), p.primarySoft);
-            ui::DrawText(dc, T(L"当前"), bg,
-                         DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                         p.primary, ui::res::Small);
-        }
+    if (current) {
+        RECT bg = { card.right - pad - dpi::S(50), pv.bottom + dpi::S(9),
+                    card.right - pad, pv.bottom + dpi::S(31) };
+        ui::FillRoundRect(dc, bg, dpi::S(11), t.AccentSoft);
+        ui::DrawText(dc, T(L"当前"), bg,
+                     DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
+                     t.Text, ui::res::Small);
+    }
 
-    ui::DrawText(dc, t.desc,
+    ui::DrawText(dc, T(t.desc),
                  RECT{ card.left + pad, pv.bottom + dpi::S(32),
                        card.right - pad, card.bottom - dpi::S(8) },
                  DT_LEFT | DT_TOP | DT_WORDBREAK | DT_NOPREFIX | DT_END_ELLIPSIS,
-                 p.textSub, ui::res::Small);
+                 t.Text2, ui::res::Small);
 }
 
 class ThemePickerPage : public ModalPage {
 public:
     void Layout(const RECT& rc) override {
-        constexpr int kCount = (int)(sizeof(design::Themes::kAll) /
-                                     sizeof(design::Themes::kAll[0]));
+        constexpr int kCount = (int)(sizeof(design::kAll) /
+                                     sizeof(design::kAll[0]));
         const int gap = dpi::S(16);
         const int top = rc.top + dpi::S(34);
         const int cw = (rc.right - rc.left - gap) / 2;
-        const int ch = (rc.bottom - top - gap) / 2;
+        const int ch = rc.bottom - top;   // 单行两卡
         cards_.clear();
         for (int i = 0; i < kCount; ++i) {
-            int col = i % 2, row = i / 2;
-            RECT c = { rc.left + col * (cw + gap), top + row * (ch + gap),
-                       rc.left + col * (cw + gap) + cw, top + row * (ch + gap) + ch };
+            RECT c = { rc.left + i * (cw + gap), top,
+                       rc.left + i * (cw + gap) + cw, top + ch };
             cards_.push_back(c);
         }
     }
@@ -552,11 +599,11 @@ public:
         ui::DrawText(dc, T(L"选择界面主题   ·   Ctrl+T 快速循环切换，选择自动保存"),
                      RECT{ rc.left, rc.top, rc.right, rc.top + dpi::S(26) },
                      DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX,
-                     color::TextSub, ui::res::Small);
+                     color::Text2, ui::res::Small);
         for (size_t i = 0; i < cards_.size(); ++i) {
-            const design::Theme& t = *design::Themes::kAll[i];
-            bool cur = (t.id == std::wstring(design::CurrentTheme()->id));
-            DrawThemeCard(dc, cards_[i], t, cur, (int)i == hover_);
+            const design::ThemeTokens* t = design::kAll[i];
+            bool cur = (wcscmp(t->id, design::CurrentTheme()->id) == 0);
+            DrawThemeCard(dc, cards_[i], *t, cur, (int)i == hover_);
         }
     }
 
@@ -564,8 +611,8 @@ public:
         for (size_t i = 0; i < cards_.size(); ++i) {
             const RECT& c = cards_[i];
             if (x >= c.left && x < c.right && y >= c.top && y < c.bottom) {
-                if (design::Themes::kAll[i] != design::CurrentTheme()) {
-                    design::ApplyTheme(design::Themes::kAll[i]);
+                if (design::kAll[i] != design::CurrentTheme()) {
+                    design::ApplyTheme(design::kAll[i]);
                 }
                 result = kModalOk;   // 点击即应用并关闭
                 return;
@@ -606,7 +653,7 @@ void ThemePickerDialog(HWND host) {
     opt.okText = T(L"完成");
     opt.cancelText = T(L"取消");
     opt.showCancel = false;
-    RunModal(host, T(L"界面主题"), 780, 560, &page, opt);
+    RunModal(host, T(L"界面主题"), 720, 480, &page, opt);
 }
 
 } // namespace ui

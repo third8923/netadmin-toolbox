@@ -124,10 +124,16 @@ private:
 };
 
 // ---------------------------------------------------------------- 绘制辅助
-// 圆角矩形（GDI RoundRect 是 1px 描边且无抗锯齿，高级控件统一用这个）
+// GDI+ 生命周期（懒加载，首次 AA 绘制前自动 Startup；InitResources 显式预热）。
+// Shutdown 与进程字体资源一起在 FreeResources 释放，崩溃域与 v2.16 一致。
+void EnsureGdiplus();
+void ShutdownGdiplus();
+
+// 圆角矩形（r≤2 保留 GDI 快路径；r>2 走 GDI+ GraphicsPath 抗锯齿——
+// CreateRoundRectRgn 的锯齿边在 VI 胶囊/大圆角上不可接受）
 void FillRoundRect(HDC dc, const RECT& rc, int radius, COLORREF fill);
 
-// 圆角矩形描边
+// 圆角矩形描边（同上 AA 语义；width 走 GDI+ Pen）
 void StrokeRoundRect(HDC dc, const RECT& rc, int radius, COLORREF line, int width = 1);
 
 // 水平/垂直渐变填充（用于 Toast、进度条等需要质感的位置）

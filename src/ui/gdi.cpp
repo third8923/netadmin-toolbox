@@ -1,45 +1,157 @@
+// ============================================================================
+//  GDI RAII 包装 + 双缓冲渲染上下文 + GDI+ 抗锯齿圆角（v2.17）
+//  ---------------------------------------------------------------------------
+//  设计原则：
+//    * 每一个 GDI 对象都有唯一所有者，离开作用域自动释放 —— 杜绝句柄泄漏
+//    * 所有窗口绘制一律走 DoubleBuffer，先画到内存 DC 再一次性呈现，
+//      彻底消除 WM_PAINT 闪烁
+//    * v2.17：FillRoundRect / StrokeRoundRect 半径 >2 时改走 GDI+
+//      GraphicsPath 抗锯齿路径（VI 胶囊 999px / 卡片 12px 圆角必须平滑）；
+//      r≤2 保留旧 GDI 快路径（细线/分隔线场景，性能优先）。
+//      GDI+ 对象栈上创建即用即弃（每帧数百次实测可承受，双缓冲已就位）。
+// ============================================================================
 #include "gdi.h"
 
+#include <windows.h>
+#include <objidl.h>     // PROPID（WIN32_LEAN_AND_MEAN 排除了 objidl，gdiplus 需要）
+#include <gdiplus.h>
+
+#include <algorithm>
 #include <cmath>
 
 namespace mz {
 namespace ui {
 
-void FillRoundRect(HDC dc, const RECT& rc, int radius, COLORREF fill) {
-    if (radius <= 0 || rc.right <= rc.left || rc.bottom <= rc.top) {
-        RECT r = rc;
-        if (r.right > r.left && r.bottom > r.top) FillRect(dc, &r, Brush(fill));
-        return;
-    }
-    // 半径钳制在高度一半内，避免上下两条圆角弧自交
-    int r = radius;
-    int hgt = rc.bottom - rc.top;
-    if (r * 2 > hgt) r = hgt / 2;
-    if (r < 1) r = 1;
+// ---------------------------------------------------------------- GDI+ 生命周期
 
-    // 单个圆角区域一次成型（旧实现先 FillRect 整矩形再补圆，等于没裁角）
-    Brush b(fill);
-    HRGN rgn = CreateRoundRectRgn(rc.left, rc.top, rc.right + 1, rc.bottom + 1, r * 2, r * 2);
-    if (rgn) {
-        FillRgn(dc, rgn, b);
-        DeleteObject(rgn);
-    } else {
-        RECT full = rc;
-        FillRect(dc, &full, b);
+namespace {
+bool g_gdiplus = false;
+ULONG_PTR g_gdiplusToken = 0;
+} // namespace
+
+void EnsureGdiplus() {
+    if (g_gdiplus) return;
+    Gdiplus::GdiplusStartupInput si;
+    if (Gdiplus::GdiplusStartup(&g_gdiplusToken, &si, nullptr) == Gdiplus::Ok)
+        g_gdiplus = true;
+}
+
+void ShutdownGdiplus() {
+    if (g_gdiplus) {
+        Gdiplus::GdiplusShutdown(g_gdiplusToken);
+        g_gdiplus = false;
+        g_gdiplusToken = 0;
     }
 }
 
+// ---------------------------------------------------------------- AA 圆角
+
+namespace {
+
+Gdiplus::Color GpColor(COLORREF c) {
+    return Gdiplus::Color(255, GetRValue(c), GetGValue(c), GetBValue(c));
+}
+
+// 圆角路径（GDI+ 坐标系：右/下边界各内收 0.5px，避免被裁边）
+void GpRoundPath(Gdiplus::GraphicsPath& p, const RECT& rc, int radius) {
+    Gdiplus::REAL x = (Gdiplus::REAL)rc.left, y = (Gdiplus::REAL)rc.top;
+    Gdiplus::REAL w = (Gdiplus::REAL)(rc.right - rc.left - 1), h = (Gdiplus::REAL)(rc.bottom - rc.top - 1);
+    Gdiplus::REAL r = (Gdiplus::REAL)radius;
+    if (r * 2 > w) r = w / 2;
+    if (r * 2 > h) r = h / 2;
+    if (r < 0.5f) {
+        p.AddRectangle(Gdiplus::RectF(x, y, w, h));
+        return;
+    }
+    Gdiplus::REAL x2 = x + w, y2 = y + h;
+    p.AddArc(x, y, r * 2, r * 2, 180, 90);
+    p.AddArc(x2 - r * 2, y, r * 2, r * 2, 270, 90);
+    p.AddArc(x2 - r * 2, y2 - r * 2, r * 2, r * 2, 0, 90);
+    p.AddArc(x, y2 - r * 2, r * 2, r * 2, 90, 90);
+    p.CloseFigure();
+}
+
+} // namespace
+
+void FillRoundRect(HDC dc, const RECT& rc, int radius, COLORREF fill) {
+    if (rc.right <= rc.left || rc.bottom <= rc.top) return;
+
+    // r≤2：GDI 快路径（细线/ hairline 场景，锯齿不可见）
+    if (radius <= 2) {
+        int r = radius;
+        int hgt = rc.bottom - rc.top;
+        if (r * 2 > hgt) r = hgt / 2;
+        if (r < 1) {
+            FillRect(dc, &rc, Brush(fill));
+            return;
+        }
+        Brush b(fill);
+        HRGN rgn = CreateRoundRectRgn(rc.left, rc.top, rc.right + 1, rc.bottom + 1,
+                                      r * 2, r * 2);
+        if (rgn) {
+            FillRgn(dc, rgn, b);
+            DeleteObject(rgn);
+        } else {
+            RECT full = rc;
+            FillRect(dc, &full, b);
+        }
+        return;
+    }
+
+    // r>2：GDI+ 抗锯齿路径填充
+    EnsureGdiplus();
+    if (!g_gdiplus) {
+        // GDI+ 启动失败：回退 GDI 圆角（保功能不保平滑）
+        int r = std::min(radius, (int)((rc.bottom - rc.top) / 2));
+        Brush b(fill);
+        HRGN rgn = CreateRoundRectRgn(rc.left, rc.top, rc.right + 1, rc.bottom + 1,
+                                      r * 2, r * 2);
+        if (rgn) { FillRgn(dc, rgn, b); DeleteObject(rgn); }
+        return;
+    }
+    Gdiplus::Graphics g(dc);
+    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    Gdiplus::GraphicsPath path;
+    GpRoundPath(path, rc, radius);
+    Gdiplus::SolidBrush b(GpColor(fill));
+    g.FillPath(&b, &path);
+}
+
 void StrokeRoundRect(HDC dc, const RECT& rc, int radius, COLORREF line, int width) {
-    int r = radius;
-    int hgt = rc.bottom - rc.top;
-    if (r * 2 > hgt) r = hgt / 2;
-    Pen p(line, width);
-    Selected sp(dc, p);
-    Selected sb(dc, GetStockObject(NULL_BRUSH));
-    // 略微内缩，避免 1px 描边被裁掉一半
-    RECT rr = { rc.left + width / 2, rc.top + width / 2,
-                rc.right - width / 2 + 1, rc.bottom - width / 2 + 1 };
-    RoundRect(dc, rr.left, rr.top, rr.right, rr.bottom, r * 2, r * 2);
+    if (rc.right <= rc.left || rc.bottom <= rc.top) return;
+
+    // r≤2：GDI 快路径（原实现）
+    if (radius <= 2) {
+        int r = radius;
+        int hgt = rc.bottom - rc.top;
+        if (r * 2 > hgt) r = hgt / 2;
+        Pen p(line, width);
+        Selected sp(dc, p);
+        Selected sb(dc, GetStockObject(NULL_BRUSH));
+        RECT rr = { rc.left + width / 2, rc.top + width / 2,
+                    rc.right - width / 2 + 1, rc.bottom - width / 2 + 1 };
+        RoundRect(dc, rr.left, rr.top, rr.right, rr.bottom, r * 2, r * 2);
+        return;
+    }
+
+    // r>2：GDI+ 抗锯齿描边
+    EnsureGdiplus();
+    if (!g_gdiplus) {
+        int r = std::min(radius, (int)((rc.bottom - rc.top) / 2));
+        Pen p(line, width);
+        Selected sp(dc, p);
+        Selected sb(dc, GetStockObject(NULL_BRUSH));
+        RECT rr = { rc.left + width / 2, rc.top + width / 2,
+                    rc.right - width / 2 + 1, rc.bottom - width / 2 + 1 };
+        RoundRect(dc, rr.left, rr.top, rr.right, rr.bottom, r * 2, r * 2);
+        return;
+    }
+    Gdiplus::Graphics g(dc);
+    g.SetSmoothingMode(Gdiplus::SmoothingModeAntiAlias);
+    Gdiplus::GraphicsPath path;
+    GpRoundPath(path, rc, radius);
+    Gdiplus::Pen p(GpColor(line), (Gdiplus::REAL)width);
+    g.DrawPath(&p, &path);
 }
 
 void FillGradientV(HDC dc, const RECT& rc, COLORREF top, COLORREF bottom) {
